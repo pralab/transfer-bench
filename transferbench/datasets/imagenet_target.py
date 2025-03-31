@@ -18,14 +18,14 @@ class ImageNetT(torch.utils.data.Dataset):
 
     def __init__(
         self,
-        root: str,
+        root: Optional[str] = None,
         transform: Optional[Callable] = None,
         target_transform: Optional[Callable] = None,
     ) -> None:
         r"""Initialize the ImageNet dataset.
 
         Args:
-            root (str): Root folder of the dataset.
+            root Optional(str): Root folder of the dataset.
             transform (Callable): Transform to apply to the images.
             target_transform (Callable): Transform to apply to the target labels.
 
@@ -39,10 +39,13 @@ class ImageNetT(torch.utils.data.Dataset):
         r"""Download the dataset from kaggle."""
         dataset_link = "google-brain/nips-2017-adversarial-learning-development-set"
         path = kagglehub.dataset_download(dataset_link)
-        # copy the images to the root folder
-        shutil.copytree(path, self.root)
-        # remove the downloaded folder
-        shutil.rmtree(path)
+        if self.root is None:
+            self.root = path
+        else:
+            # copy the images to the root folder
+            shutil.copytree(path, self.root)
+            # remove the downloaded folder
+            shutil.rmtree(path)
 
     def _load_data(self) -> tuple[list[str], list[int], list[int]]:
         r"""Load the ImageNet dataset with target labels.
@@ -58,6 +61,8 @@ class ImageNetT(torch.utils.data.Dataset):
             list[int]: The target label of images.
 
         """
+        if self.root is None:
+            self.download_dataset()
         img_dir_paths = Path(self.root + "/images")
         # if  empty, download the dataset
         if not img_dir_paths.exists():

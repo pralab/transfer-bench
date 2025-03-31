@@ -2,9 +2,13 @@ r"""Module for taking models from torchvision."""
 
 import torch
 from torch.nn import Module
-from torchvision.models import get_model as get_models_
+from torchvision.models import get_model as get_model_
+
+from transferbench.utils.cache import get_cache_dir
 
 from .utils import Stats, add_normalization
+
+MODEL_CACHE_DIR = get_cache_dir() / "models"
 
 
 def get_model(
@@ -25,7 +29,9 @@ def get_model(
     -------
     - torch.nn.Module: The requested model.
     """
-    model = add_normalization(get_models_(model_id), mean, std)
+    model = add_normalization(
+        get_model_(model_id, download_dir=MODEL_CACHE_DIR), mean, std
+    )
     return model.to(device)
 
 

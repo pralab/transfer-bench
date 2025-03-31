@@ -1,43 +1,52 @@
-from dataclasses import dataclass
+r"""Class and script for evaluating the transferability metric."""
+
+from dataclasses import asdict
 
 import torch
 from torch import nn
 from tqdm import tqdm
 
 from transferbench import attacks
-from transferbench.datasets import get_loader
-from transferbench.models.utils import add_normalization
-
-
-@dataclass
-class Scenario:
-    hp: dict
-    attack_step: str
-    dataset: str
-
+from transferbench.datasets import DataLoader, get_loader
+from transferbench.models import get_model
+from transferbench.utils.scenarios import BaseHyperParameters, TransferScenario
 
 SCENARIOS = {
     "oneshot": (
-        Scenario(
-            hp={"maximum_queries": 1, "p": "inf", "eps": 16 / 255},
+        TransferScenario(
+            hp=BaseHyperParameters(maximum_queries=1, p="inf", eps=16 / 255),
             attack_step="NaiveAvg",
             dataset="ImageNetT",
-        )
+        ),
     ),
     "fast": (
-        Scenario(
-            hp={"maximum_queries": 10, "p": "inf", "eps": 16 / 255},
+        TransferScenario(
+            hp=BaseHyperParameters(maximum_queries=10, p="inf", eps=16 / 255),
             attack_step="NaiveAvg",
             dataset="ImageNetT",
-        )
+        ),
+    ),
+    "full": (
+        TransferScenario(
+            hp=BaseHyperParameters(maximum_queries=50, p="inf", eps=16 / 255),
+            attack_step="NaiveAvg",
+            dataset="ImageNetT",
+        ),
+        TransferScenario(
+            hp=BaseHyperParameters(maximum_queries=50, p="inf", eps=16 / 255),
+            attack_step="NaiveAvg",
+            dataset="CIFAR10T",
+        ),
     ),
 }
 
 
-class TransferabilityEvaluator:
+class TransferEval:
     r"""Class to evaluate the transferability metric."""
 
-    def __init__(self, vicim_model: nn.Module, *surrogate_models: nn.Module) -> None:
+    def __init__(
+        self, vicim_model: str | nn.Module, surrogate_models: str | nn.Module
+    ) -> None:
         r"""Initialize the class for the evaluation of the transferability.
 
         Parameters
@@ -47,64 +56,89 @@ class TransferabilityEvaluator:
         """
         self.victim_model = vicim_model
         self.surrogate_models = surrogate_models
-        self.set_scenarios("oneshot", "fast")
+        self.set_scenarios("oneshot")
 
-    def set_scenarios(self, *scenarios: str) -> None:
+    def set_scenarios(self, *scenarios: str | TransferScenario) -> None:
         r"""Set the scenarios to be evaluated."""
-        self.scenarios = [scn for scn in scenarios if scn in SCENARIOS]
+        self.scenarios = []
+        for scn in scenarios:
+            if isinstance(scn, TransferScenario):
+                self.scenarios.append(scn)
+            elif isinstance(scn, str):
+                self.scenarios.extend(SCENARIOS[scn])
 
     def __repr__(self) -> str:  # noqa: D105
         return (
             f"TrasnferabilityEvaluator(victim_model={self.victim_model}",
             f"surrogate_models={self.surrogate_models})",
-            f"scenarios={SCENARIOS})",
+            f"scenarios={self.scenarios})",
         )
 
     def run(self, batch_size: int = 128, device: torch.device = "cuda") -> None:
         r"""Run the evaluation."""
+        results = []
         for scenario in self.scenarios:
-            print(f"Evaluating scenario : {scenario}")
+            print(f"Evaluating scenario: {scenario}")
             result = self.evaluate_scenario(scenario, batch_size, device)
-            print(f"Finished evaluating scenario {scenario}")
-            print(result)
+            results.append(
+                {
+                    **asdict(scenario.hp),
+                    "attack_step": scenario.attack_step,
+                    "dataset": scenario.dataset,
+                    **result,
+                }
+            )
 
     def evaluate_scenario(
         self,
-        scenario: str = "oneshot",
+        scenario: TransferScenario,
         batch_size: int = 128,
         device: torch.device = "cuda",
     ) -> None:
         r"""Evaluate the transferability metric"."""
-        # Get the scenario
-        scenario = SCENARIOS[scenario]
         # Get the hyperparameters
-        hp = attacks.BaseHyperParameters(**scenario.hp)
+        hp = scenario.hp
         # Get the attack step
-        attack_step = getattr(attacks, scenario.attack_step)
+        attack_step = (
+            getattr(attacks, scenario.attack_step)
+            if isinstance(scenario.attack_step, str)
+            else scenario.attack_step
+        )
         # Get the dataloader
-        data_loader = get_loader(scenario.dataset, batch_size=batch_size, device=device)
-        # Add normalization to the model
-        mean, std = data_loader.dataset.mean, data_loader.dataset.std
-        victim_model = add_normalization(self.victim_model, mean, std)
-        surrogate_models = [
-            add_normalization(model, mean, std) for model in self.surrogate_models
+        data_loader = (
+            get_loader(scenario.dataset, batch_size=batch_size, device=device)
+            if isinstance(scenario.dataset, str)
+            else DataLoader(scenario.dataset, batch_size=batch_size, device=device)
+        )
+        # Import model if string is given
+        if isinstance(self.victim_model, str):
+            self.victim_model = get_model(
+                self.victim_model, data_loader.dataset.mean, data_loader.dataset.std
+            )
+        # Import surrogate models if list of string is given
+        self.surrogate_models = [
+            get_model(model, data_loader.dataset.mean, data_loader.dataset.std)
+            if isinstance(model, str)
+            else model
+            for model in self.surrogate_models
         ]
+
         # Set the device
-        victim_model.to(device)
-        for surrogate_model in surrogate_models:
+        self.victim_model.to(device)
+        for surrogate_model in self.surrogate_models:
             surrogate_model.to(device)
 
         # Get the attack
         attack = attacks.TransferAttack(
-            victim_model=victim_model,
-            surrogate_models=surrogate_models,
+            victim_model=self.victim_model,
+            surrogate_models=self.surrogate_models,
             attack_step=attack_step,
             hyperparameters=hp,
         )
         pbar = tqdm(
             data_loader,
             total=len(data_loader),
-            desc="Evaluating transferability",
+            desc="Evaluating Transferability",
         )
         success = 0
         queries = 0
@@ -121,7 +155,7 @@ class TransferabilityEvaluator:
                 {
                     "ASR": success / len(data_loader.dataset),
                     "AvgQ": queries / len(data_loader.dataset),
-                    "successes_per_queries": success / queries,
+                    "ASPQ": success / queries if queries > 0 else 0,
                 }
             )
         return {
