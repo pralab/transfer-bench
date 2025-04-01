@@ -1,4 +1,4 @@
-# Transfer-Bench
+# TransferBench
 
 TransferBench is a Python package designed to evaluate black-box attacks using one or more surrogate models. It provides tools to assess the transferability of adversarial examples and analyze the effectiveness of attacks in various scenarios.
 
