@@ -5,7 +5,8 @@ from typing import Optional
 from torch.utils.data import Dataset
 from torchvision import transforms as tsfm
 from torchvision.transforms import InterpolationMode as Interp
-from utils.cache import get_cache_dir
+
+from transferbench.utils.cache import get_cache_dir
 
 from .cifar10_target import CIFAR10T as CIFAR10T_
 from .imagenet_target import ImageNetT as ImageNetT_

@@ -24,3 +24,4 @@ class AttackScenario:
     hp: BaseHyperParameters
     victim_model: str | Module
     surrogate_models: list[str | Module]
+    dataset: str | Dataset

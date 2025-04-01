@@ -20,6 +20,7 @@ dependencies = [
     "kagglehub >= 0.3.0",
     "tqdm >= 4.62.0",
     "appdirs >= 1.4.0",
+    "typer >= 0.15.0",
 ]
 
 [tool.setuptools]

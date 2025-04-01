@@ -1,17 +1,22 @@
-from scenarios import AttackScenario
-import attacks
-import torch
+r"""Define the class for the attack evaluation."""
+
 from dataclasses import asdict
+
+import torch
 from tqdm.autonotebook import tqdm
-from datasets import get_loader, DataLoader
-from models import get_model
+
+from transferbench import attacks
+from transferbench.datasets import DataLoader, get_loader
+from transferbench.models import get_model
+
+from .scenarios import AttackScenario
 
 SCENARIOS = {
     "bases": (
         AttackScenario(
             hp=attacks.BaseHyperParameters(maximum_queries=50, p="inf", eps=16 / 255),
             victim_model="ResNeXt50",
-            surrogate_models=["ResNet50", "DenseNet121"],  # TODO
+            surrogate_models=["ResNet50", "DenseNet121"],
             dataset="ImageNetT",
         ),
     )
@@ -19,6 +24,8 @@ SCENARIOS = {
 
 
 class AttackEval:
+    r"""Class for the evaluation of a black-box attack."""
+
     def __init__(self, attack: str | attacks.AttackStep) -> None:
         r"""Initialize the class for the evaluation of a black-box attack.
 

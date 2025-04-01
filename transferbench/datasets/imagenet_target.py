@@ -63,12 +63,12 @@ class ImageNetT(torch.utils.data.Dataset):
         """
         if self.root is None:
             self.download_dataset()
-        img_dir_paths = Path(self.root + "/images")
+        img_dir_paths = Path(self.root / "images")
         # if  empty, download the dataset
         if not img_dir_paths.exists():
             self.download_dataset()
         img_paths = sorted(img_dir_paths.glob("*.png"))
-        csv_path = Path(self.root + "/images.csv")
+        csv_path = Path(self.root / "images.csv")
         gt_dict = defaultdict(int)
         tgt_dict = defaultdict(int)
         # Read the csv file and store the labels in a dictionary
