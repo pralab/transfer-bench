@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "transferbench"
+version = "0.1.0"
+description = "A Python package for benchmarking transferability and transfer-black-box attacks."
+authors = [{ name = "Fabio Brau", email = "fabio.brau@unica.it" }]
+license = "MIT"
+readme = "Readme.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "torch>=1.7.0",
+    "torchvision>=0.8.0",
+    "kagglehub >= 0.3.0",
+    "tqdm >= 4.62.0",
+    "appdirs >= 1.4.0",
+]
+
+[tool.setuptools]
+packages = ["transferbench"]
