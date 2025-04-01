@@ -1,0 +1,8 @@
+appdirs==1.4.4
+kagglehub==0.3.10
+Pillow==11.1.0
+setuptools==75.8.0
+torch==2.5.1
+torchvision==0.20.1
+tqdm==4.67.1
+typer==0.15.2

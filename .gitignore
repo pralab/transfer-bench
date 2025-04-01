@@ -3,7 +3,7 @@
 
 # Files
 *.pkl
-*.txt
+#*.txt
 *.pdf
 *.zip
 
