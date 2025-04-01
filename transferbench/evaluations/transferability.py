@@ -4,36 +4,37 @@ from dataclasses import asdict
 
 import torch
 from torch import nn
-from tqdm import tqdm
+from tqdm.autonotebook import tqdm
 
 from transferbench import attacks
 from transferbench.datasets import DataLoader, get_loader
 from transferbench.models import get_model
-from transferbench.utils.scenarios import BaseHyperParameters, TransferScenario
+
+from .scenarios import TransferScenario
 
 SCENARIOS = {
     "oneshot": (
         TransferScenario(
-            hp=BaseHyperParameters(maximum_queries=1, p="inf", eps=16 / 255),
+            hp=attacks.BaseHyperParameters(maximum_queries=1, p="inf", eps=16 / 255),
             attack_step="NaiveAvg",
             dataset="ImageNetT",
         ),
     ),
     "fast": (
         TransferScenario(
-            hp=BaseHyperParameters(maximum_queries=10, p="inf", eps=16 / 255),
+            hp=attacks.BaseHyperParameters(maximum_queries=10, p="inf", eps=16 / 255),
             attack_step="NaiveAvg",
             dataset="ImageNetT",
         ),
     ),
     "full": (
         TransferScenario(
-            hp=BaseHyperParameters(maximum_queries=50, p="inf", eps=16 / 255),
+            hp=attacks.BaseHyperParameters(maximum_queries=50, p="inf", eps=16 / 255),
             attack_step="NaiveAvg",
             dataset="ImageNetT",
         ),
         TransferScenario(
-            hp=BaseHyperParameters(maximum_queries=50, p="inf", eps=16 / 255),
+            hp=attacks.BaseHyperParameters(maximum_queries=50, p="inf", eps=16 / 255),
             attack_step="NaiveAvg",
             dataset="CIFAR10T",
         ),
@@ -69,7 +70,7 @@ class TransferEval:
 
     def __repr__(self) -> str:  # noqa: D105
         return (
-            f"TrasnferabilityEvaluator(victim_model={self.victim_model}",
+            f"TransferEval(victim_model={self.victim_model}",
             f"surrogate_models={self.surrogate_models})",
             f"scenarios={self.scenarios})",
         )

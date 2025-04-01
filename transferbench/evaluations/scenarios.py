@@ -1,6 +1,11 @@
+r"""Define scenario for the evaluations."""
+
 from dataclasses import dataclass
-from transferbench.attacks import BaseHyperParameters, AttackStep
+
+from torch.nn import Module
 from torch.utils.data import Dataset
+
+from transferbench.attacks import AttackStep, BaseHyperParameters
 
 
 @dataclass
@@ -17,5 +22,5 @@ class AttackScenario:
     r"""Define the scenario for evaluaring the transferability metric."""
 
     hp: BaseHyperParameters
-    victim_model: str
-    surrogate_models: list
+    victim_model: str | Module
+    surrogate_models: list[str | Module]
