@@ -22,3 +22,6 @@ def __getattr__(name: str):  # noqa: ANN202
             raise ImportError(msg) from error
     msg = f"module {__name__!r} has no attribute {name!r}"
     raise AttributeError(msg)
+
+
+__all__ = ["NaiveAvg"]
