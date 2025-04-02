@@ -1,46 +1,73 @@
-r"""Define the class for the attack evaluation."""
+r"""Class and script for evaluating the transferability metric."""
 
 from dataclasses import asdict
 
 import torch
+from torch import nn
 from tqdm.autonotebook import tqdm
 
-from transferbench import attacks
-from transferbench.datasets import DataLoader, get_loader
-from transferbench.models import get_model
-
-from .scenarios import AttackScenario
+from . import wrappers
+from .datasets import DataLoader, get_loader
+from .models import get_model
+from .scenarios import TransferScenario
+from .wrappers import AttackWrapper, HyperParameters
 
 SCENARIOS = {
-    "bases": (
-        AttackScenario(
-            hp=attacks.BaseHyperParameters(maximum_queries=50, p="inf", eps=16 / 255),
-            victim_model="ResNeXt50",
-            surrogate_models=["ResNet50", "DenseNet121"],
+    "oneshot": (
+        TransferScenario(
+            hp=HyperParameters(maximum_queries=1, p="inf", eps=16 / 255),
+            transfer_attack="NaiveAvg",
             dataset="ImageNetT",
         ),
-    )
+    ),
+    "fast": (
+        TransferScenario(
+            hp=HyperParameters(maximum_queries=10, p="inf", eps=16 / 255),
+            transfer_attack="NaiveAvg",
+            dataset="ImageNetT",
+        ),
+    ),
+    "full": (
+        TransferScenario(
+            hp=HyperParameters(maximum_queries=50, p="inf", eps=16 / 255),
+            transfer_attack="NaiveAvg",
+            dataset="ImageNetT",
+        ),
+        TransferScenario(
+            hp=HyperParameters(maximum_queries=50, p="inf", eps=16 / 255),
+            transfer_attack="NaiveAvg",
+            dataset="CIFAR10T",
+        ),
+    ),
 }
 
 
-class AttackEval:
-    r"""Class for the evaluation of a black-box attack."""
+class TransferEval:
+    r"""Class to evaluate the transferability."""
 
-    def __init__(self, attack: str | attacks.AttackStep) -> None:
-        r"""Initialize the class for the evaluation of a black-box attack.
+    def __init__(
+        self, vicim_model: str | nn.Module, surrogate_models: str | nn.Module
+    ) -> None:
+        r"""Evaluate the transferability given a victim model and a surrogate model.
+
+        The victim model is the model to be attacked, and the surrogate model is
+        the model used to generate the adversarial examples. The transferability is
+        evaluated on default or customized scenarios (defaults are defined in config).
 
         Parameters
         ----------
-        - attack (str | AttackStep): The attack step.
+        - victim_model (nn.Module): The victim model.
+        - surrogate_models (list[nn.Module]): The surrogate models.
         """
-        self.attack = attack
-        self.set_scenarios("bases")
+        self.victim_model = vicim_model
+        self.surrogate_models = surrogate_models
+        self.set_scenarios("oneshot")
 
-    def set_scenarios(self, *scenarios: str | AttackScenario) -> None:
+    def set_scenarios(self, *scenarios: str | TransferScenario) -> None:
         r"""Set the scenarios to be evaluated."""
         self.scenarios = []
         for scn in scenarios:
-            if isinstance(scn, AttackScenario):
+            if isinstance(scn, TransferScenario):
                 self.scenarios.append(scn)
             elif isinstance(scn, str):
                 self.scenarios.extend(SCENARIOS[scn])
@@ -61,7 +88,7 @@ class AttackEval:
             results.append(
                 {
                     **asdict(scenario.hp),
-                    "attack_step": scenario.attack_step,
+                    "transfer_attack": scenario.transfer_attack,
                     "dataset": scenario.dataset,
                     **result,
                 }
@@ -69,7 +96,7 @@ class AttackEval:
 
     def evaluate_scenario(
         self,
-        scenario: AttackScenario,
+        scenario: TransferScenario,
         batch_size: int = 128,
         device: torch.device = "cuda",
     ) -> None:
@@ -77,10 +104,10 @@ class AttackEval:
         # Get the hyperparameters
         hp = scenario.hp
         # Get the attack step
-        attack_step = (
-            getattr(attacks, self.attack_step)
-            if isinstance(self.attack_step, str)
-            else self.attack_step
+        transfer_attack = (
+            getattr(wrappers, scenario.transfer_attack)
+            if isinstance(scenario.transfer_attack, str)
+            else scenario.transfer_attack
         )
         # Get the dataloader
         data_loader = (
@@ -89,37 +116,34 @@ class AttackEval:
             else DataLoader(scenario.dataset, batch_size=batch_size, device=device)
         )
         # Import model if string is given
-        if isinstance(scenario.victim_model, str):
-            victim_model = get_model(
-                scenario.victim_model, data_loader.dataset.mean, data_loader.dataset.std
+        if isinstance(self.victim_model, str):
+            self.victim_model = get_model(
+                self.victim_model, data_loader.dataset.mean, data_loader.dataset.std
             )
-        else:
-            victim_model = scenario.victim_model
-
         # Import surrogate models if list of string is given
-        surrogate_models = [
+        self.surrogate_models = [
             get_model(model, data_loader.dataset.mean, data_loader.dataset.std)
             if isinstance(model, str)
             else model
-            for model in scenario.surrogate_models
+            for model in self.surrogate_models
         ]
 
         # Set the device
-        victim_model.to(device)
-        for surrogate_model in surrogate_models:
+        self.victim_model.to(device)
+        for surrogate_model in self.surrogate_models:
             surrogate_model.to(device)
 
         # Get the attack
-        attack = attacks.TransferAttack(
-            victim_model=victim_model,
-            surrogate_models=surrogate_models,
-            attack_step=attack_step,
+        attack = AttackWrapper(
+            victim_model=self.victim_model,
+            surrogate_models=self.surrogate_models,
+            transfer_attack=transfer_attack,
             hyperparameters=hp,
         )
         pbar = tqdm(
             data_loader,
             total=len(data_loader),
-            desc="Evaluating Attack",
+            desc="Evaluating Transferability",
         )
         success = 0
         queries = 0

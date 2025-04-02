@@ -20,20 +20,6 @@ dependencies = [
     "kagglehub >= 0.3.0",
     "tqdm >= 4.62.0",
     "appdirs >= 1.4.0",
-    "typer >= 0.15.0",
 ]
-
-#[tool.setuptools]
-#packages = ["transferbench"]
-
-# Define "extras" as an optional feature
-[project.optional-dependencies]
-extras = [] # No extra deps needed (just the `extras/` dir)
-
-# Conditionally include `extras/` only when `[extras]` is installed
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["transferbench"]
-
-[tool.setuptools.dynamic]
-optional-dependencies.extras = { file = "extras/requirements.txt" } # Link to extras requirements
+[tool.setuptools]
+packages = ["transferbench"]

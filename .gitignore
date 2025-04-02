@@ -14,7 +14,6 @@ __pycache__/
 
 # C extensions
 *.so
-
 # Distribution / packaging
 .Python
 build/
@@ -30,7 +29,7 @@ sdist/
 var/
 wheels/
 share/python-wheels/
-*.egg-info
+*.egg-info/
 .installed.cfg
 *.egg
 MANIFEST

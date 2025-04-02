@@ -1,80 +1,20 @@
 r"""Module for transfer attacks."""
 
 from dataclasses import asdict, dataclass
-from typing import Optional, Protocol, runtime_checkable
+from typing import Optional
 
 import torch
 from torch import Tensor, nn
 
-from transferbench.models.utils import ModelWrapper
+from transferbench.types import TransferAttack
 
+from .model_wrapper import ModelWrapper
 from .utils import lp_constraint
-
-
-# Type aliases
-class Model(Protocol):
-    r"""A model is a callable that takes a tensor and returns a tensor."""
-
-    @staticmethod
-    def __call__(inputs: Tensor) -> Tensor: ...  # noqa: D102
-
-
-# Hyperparameters class, to be inherited by the user for his own attack
-@runtime_checkable
-class AttackStep(Protocol):
-    r"""Attack step protocol."""
-
-    def __call__(
-        self,
-        victim_model: Model,
-        surrogate_models: list[Model],
-        inputs: Tensor,
-        labels: Tensor,
-        targets: Optional[Tensor] = None,
-        eps: Optional[float] = None,
-        p: Optional[float | str] = None,
-        maximum_queries: Optional[int] = None,
-    ) -> Tensor:
-        r"""Perform the attack on a batch of data.
-
-        Parameters
-        ----------
-        - victim_model (VictimModel): The victim model.
-        - surrogate_models (SurrogateModels): The surrogate models.
-        - inputs (Tensor): The input samples.
-        - labels (Tensor): The labels.
-        - targets (Tensor): The target labels for targeted-attack.
-        - eps (float): The epsilon of the constraint.
-        - p (float): The norm of the constraint.
-        - maximum_queries (int): The maximum number of queries.
-
-        Returns
-        -------
-        - Tensor: The adversarial examples.
-
-        The attack step function should have the following signature:
-        ```
-        def attack_step(
-            victim_model: Model,
-            *surrogate_models: Model,
-            inputs: Tensor,
-            labels: Tensor,
-            targets: Optional[Tensor] = None,
-            eps: Optional[float] = None,
-            p: Optional[float | str] = None,
-            maximum_queries: Optional[int] = None,
-        ) -> Tensor:
-            ...
-        ```
-        N.B the attack can work either in batch or single sample mode, nevertheless the
-        queries of the victim are counted batch-wise and not sample-wise, hence avoid
-        for loops, and prefer masks.
-        """
 
 
 # Hyperparameters class, to be inherited by the user for his own attack
 @dataclass(frozen=True)
-class BaseHyperParameters:
+class HyperParameters:
     r"""Hyperparameters for the attack."""
 
     maximum_queries: int  # Maximum number of queries
@@ -82,24 +22,24 @@ class BaseHyperParameters:
     eps: float  # Epsilon of the constraint
 
 
-class TransferAttack:
-    r"""Base class for transfer attacks."""
+class AttackWrapper:
+    r"""Wrapper class for the transfer attack type."""
 
     def __init__(
         self,
         victim_model: nn.Module,
         surrogate_models: list[nn.Module],
-        attack_step: AttackStep,
-        hyperparameters: BaseHyperParameters,
+        transfer_attack: TransferAttack,
+        hyperparameters: HyperParameters,
     ) -> None:
-        r"""Initialize the attack.
+        r"""Wrap models and the transfer attack to handle queries and constraints.
 
         Parameters
         ----------
         - victim_model (nn.Module): The victim model.
         - surrogate_models list(nn.Module): The surrogate models.
-        - attack_step (callable): The attack step to be performed.
-        - hyperparameters (HyperParameters): The hyperparameters of the attack.
+        - transfer_attack (TransferAttack): The attack step to be performed.
+        - hyperparameters (BaseHyperParameters): The hyperparameters of the attack.
 
 
         The victim model is the model that is being attacked, taking as input
@@ -108,18 +48,18 @@ class TransferAttack:
         The attack step is the function that is called to craft the adversarial
         examples.
         """
-        self.attack_step = attack_step
+        self.transfer_attack = transfer_attack
         self.hp = hyperparameters
         self.wrap_models(victim_model, *surrogate_models)
         self.sanity_check()
 
     def sanity_check(self) -> None:
         r"""Sanity check for the attack."""
-        assert isinstance(self.hp, BaseHyperParameters), (
+        assert isinstance(self.hp, HyperParameters), (
             "Hyperparameters should be a dataclass."
         )
-        assert isinstance(self.attack_step, AttackStep), (
-            "Attack step should be the AttackStep Protocol."
+        assert isinstance(self.transfer_attack, TransferAttack), (
+            "The attack signature must satisfy the `types.TransferAttack` protocol."
         )
 
     def wrap_models(
@@ -173,7 +113,7 @@ class TransferAttack:
     ) -> dict:
         r"""Run the attack on the given input."""
         self.reset()
-        adv = self.attack_step(
+        adv = self.transfer_attack(
             self.victim_model.__call__,
             [model.__call__ for model in self.surrogate_models],
             inputs,
@@ -196,7 +136,7 @@ class TransferAttack:
         return (
             f"{self.__class__.__name__}("
             f"Hyperparameters: {self.hyperparameters}, "
-            f"Attack: {self.attack_step})"
+            f"Attack: {self.transfer_attack})"
             f"Victim: {self.victim_model.__class__.__name__},"
             f"Surrogates: {[m.__class__.__name__ for m in self.surrogate_models]}"
         )

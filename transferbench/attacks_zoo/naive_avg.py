@@ -8,7 +8,8 @@ from typing import Optional
 import torch
 from torch import Tensor
 
-from .base_transfer_attack import AttackStep, Model
+from transferbench.types import CallableModel, TransferAttack
+
 from .utils import AggregatedEnsemble
 
 
@@ -55,8 +56,8 @@ def projected_gradient_descent(
 
 
 def naive_avg(
-    victim_model: Model,
-    surrogate_models: list[Model],
+    victim_model: CallableModel,
+    surrogate_models: list[CallableModel],
     inputs: Tensor,
     labels: Tensor,
     targets: Optional[Tensor] = None,
@@ -106,4 +107,4 @@ class NaiveAvgHyperParams:
 
 
 ## Wrap the attack to be used in the evaluators
-NaiveAvg: AttackStep = partial(naive_avg, **asdict(NaiveAvgHyperParams()))
+NaiveAvg: TransferAttack = partial(naive_avg, **asdict(NaiveAvgHyperParams()))

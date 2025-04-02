@@ -4,7 +4,7 @@ import argparse
 
 import torch
 
-from transferbench import AttackEval, TransferEval
+from transferbench.evaluations import AttackEval, TransferEval
 
 DEFAUlT_DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
