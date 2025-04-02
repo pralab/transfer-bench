@@ -17,7 +17,7 @@ SCENARIOS = {
     "bases": (
         AttackScenario(
             hp=HyperParameters(maximum_queries=50, p="inf", eps=16 / 255),
-            victim_model="ResNeXt50",
+            victim_model="ResNet18",
             surrogate_models=["ResNet50", "DenseNet121"],
             dataset="ImageNetT",
         ),

@@ -21,5 +21,9 @@ dependencies = [
     "tqdm >= 4.62.0",
     "appdirs >= 1.4.0",
 ]
-[tool.setuptools]
-packages = ["transferbench"]
+
+[project.optional-dependencies]
+full = ["transferbench"]
+
+[tool.setuptools.packages.find]
+where = ["."] # Auto-find all Python packages

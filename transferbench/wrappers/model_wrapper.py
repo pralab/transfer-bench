@@ -1,12 +1,12 @@
 r"""Model wrapper to count forward and backward passes."""
 
-from torch import Module, Tensor
+from torch import Tensor, nn
 
 
 class ForwardBackwardCounter:
     r"""Hook to count forward and backward passes, considering batch size."""
 
-    def __init__(self, model: Module) -> None:
+    def __init__(self, model: nn.Module) -> None:
         r"""Initialize the counter."""
         self.forwarded_batches = 0
         self.backwarded_batches = 0
@@ -14,19 +14,19 @@ class ForwardBackwardCounter:
         self.backwarded_samples = 0
         self.attach_(model)
 
-    def forward_hook(self, module: Module, inputs: tuple[Tensor], *args) -> None:
+    def forward_hook(self, module: nn.Module, inputs: tuple[Tensor], *args) -> None:
         r"""Count the forward passes."""
         self.forwarded_batches += 1
         self.forwarded_samples += inputs[0].size(0)
 
     def backward_hook(
-        self, module: Module, grad_input: tuple[Tensor], grad_output: tuple[Tensor]
+        self, module: nn.Module, grad_input: tuple[Tensor], grad_output: tuple[Tensor]
     ) -> None:
         r"""Count backward passes."""
         self.backwarded_batches += 1
         self.backwarded_samples += grad_output[0].size(0)
 
-    def attach_(self, model: Module) -> None:
+    def attach_(self, model: nn.Module) -> None:
         r"""Attach hooks to all modules in the model."""
         model.register_forward_hook(self.forward_hook)
         model.register_full_backward_hook(self.backward_hook)
@@ -54,10 +54,10 @@ class ForwardBackwardCounter:
         return self.backwarded_samples
 
 
-class ModelWrapper(Module):
+class ModelWrapper(nn.Module):
     r"""Wrapper for a model to count forward and backward passes."""
 
-    def __init__(self, model: Module) -> None:
+    def __init__(self, model: nn.Module) -> None:
         r"""Initialize the ModelWrapper module."""
         super().__init__()
         self.counter = ForwardBackwardCounter(model)
