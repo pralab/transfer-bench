@@ -1,62 +1,89 @@
-r"""Main CLI interface for the package."""
+r"""Main entry point for the TransferBench CLI."""
 
-from typing import Annotated, Optional
+import argparse
 
 import torch
-import typer
-from evaluations import AttackEval, TransferEval
 
-app = typer.Typer(help="A powerful CLI with transfer and attack commands.")
-
-victim_model_type = Annotated[str, typer.Argument(help="Victim model name.")]
-surrogate_model_type = Annotated[
-    list[str], typer.Argument(help="Surrogate model name.")
-]
-batch_size_type = Annotated[str, typer.Argument(help="Batch size.")]
-transfer_scenario_type = Annotated[str, typer.Argument(help="Name of the scenario.")]
-device_type = Annotated[str, typer.Argument(help="Device for the evaluation.")]
+from transferbench import AttackEval, TransferEval
 
 DEFAUlT_DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
-@app.command()
 def transfer(
-    victim: victim_model_type,
-    surrogates: surrogate_model_type,
-    scenario: Optional[transfer_scenario_type] = None,
-    batch_size: batch_size_type = 64,
-    device: device_type = DEFAUlT_DEVICE,
-) -> None:
+    victim: str,
+    surrogates: list[str],
+    scenario: str,
+    batch_size: int = 64,
+    device: str | torch.device = DEFAUlT_DEVICE,
+):
     """Evaluate Transferability from surrogates to victim on a specific scenario."""
-    typer.echo(
+    print(
         f"Evaluate transferability of {surrogates} to {victim} on scenario: {scenario}"
     )
-    evaluator = TransferEval(
-        victim_model=victim,
-        surrogate_models=surrogates,
-    )
-    evaluator.run(batch_size=batch_size, device=device)
-    typer.echo("Evaluation completed.")
+    evaluator = TransferEval(victim_model=victim, surrogate_models=surrogates)
+    result = evaluator.run(batch_size=batch_size, device=device)
+    print("Evaluation completed.")
 
 
-@app.command()
-def attack(
-    attack_name: str,
-    scenario: str = typer.Option("cnn", help="Name of the scenario."),
-    batch_size: int = typer.Option(128, help="Batch size for the evaluation."),
-    device: str = typer.Option("cuda", help="Device for the evaluation."),
-) -> None:
+def attack(attack_name, scenario="cnn", batch_size=128, device="cuda"):
     """Evaluate Transferability from surrogate to victim on a specific scenario."""
-    typer.echo(f"Evaluate transferability of {attack_name} on scenario: {scenario}")
-    evaluator = AttackEval(
-        attack_name=attack_name,
-    )
+    print(f"Evaluate transferability of {attack_name} on scenario: {scenario}")
+    evaluator = AttackEval(attack_name=attack_name)
     if scenario is not None:
         evaluator.set_scenario(scenario)
     result = evaluator.run(batch_size=batch_size, device=device)
-    typer.echo("Evaluation completed.")
-    typer.echo(f"Result: {result}")
+    print("Evaluation completed.")
+    print(f"Result: {result}")
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="A powerful CLI with transfer and attack commands."
+    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    transfer_parser = subparsers.add_parser(
+        "transfer", help="Evaluate transferability of models."
+    )
+    transfer_parser.add_argument("victim", type=str, help="Victim model name.")
+    transfer_parser.add_argument(
+        "surrogates", nargs="+", type=str, help="Surrogate model name(s)."
+    )
+    transfer_parser.add_argument("--scenario", type=str, help="Name of the scenario.")
+    transfer_parser.add_argument(
+        "--batch_size", type=int, default=64, help="Batch size."
+    )
+    transfer_parser.add_argument(
+        "--device", type=str, default=DEFAUlT_DEVICE, help="Device for the evaluation."
+    )
+    transfer_parser.set_defaults(
+        func=lambda args: transfer(
+            args.victim, args.surrogates, args.scenario, args.batch_size, args.device
+        )
+    )
+
+    attack_parser = subparsers.add_parser(
+        "attack", help="Evaluate transferability of an attack."
+    )
+    attack_parser.add_argument("attack_name", type=str, help="Attack name.")
+    attack_parser.add_argument(
+        "--scenario", type=str, default="cnn", help="Name of the scenario."
+    )
+    attack_parser.add_argument(
+        "--batch_size", type=int, default=128, help="Batch size for the evaluation."
+    )
+    attack_parser.add_argument(
+        "--device", type=str, default="cuda", help="Device for the evaluation."
+    )
+    attack_parser.set_defaults(
+        func=lambda args: attack(
+            args.attack_name, args.scenario, args.batch_size, args.device
+        )
+    )
+
+    args = parser.parse_args()
+    args.func(args)
 
 
 if __name__ == "__main__":
-    app()
+    main()

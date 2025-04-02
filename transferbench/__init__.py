@@ -1,8 +1,7 @@
 r"""Initialization file for the transferbench package."""
 
-from transferbench.evaluations import AttackEval, TransferEval
-
 from . import attacks, datasets, models, utils
+from .evaluations import AttackEval, TransferEval
 
 __all__ = [
     "AttackEval",

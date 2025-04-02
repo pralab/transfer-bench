@@ -1,4 +1,4 @@
-r"""Evalautioion classes."""
+r"""Evaluation classes."""
 
 from .attack import AttackEval
 from .scenarios import AttackScenario, TransferScenario
