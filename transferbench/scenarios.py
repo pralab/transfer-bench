@@ -1,13 +1,14 @@
 r"""Define scenario for the evaluations."""
 
 from dataclasses import dataclass
+from pathlib import Path
 
+import yaml
 from torch.nn import Module
 from torch.utils.data import Dataset
 
-from .types import TransferAttack
-from .wrappers import HyperParameters
-from transferbench.config import CONFIG_DIR
+from transferbench.types import TransferAttack
+from transferbench.wrappers import HyperParameters
 
 
 @dataclass
@@ -29,19 +30,59 @@ class AttackScenario:
     dataset: str | Dataset
 
 
-def load_scenario(scenario_name: str) -> dict[str, AttackScenario]:
-    """Load and parse a YAML scenario file.
+__SCENARIO_DIR__ = Path(__file__).parent / "config" / "scenarios"
 
-    Args:
-        file_name: Name of the YAML file to load (e.g., 'scenarios.yaml')
 
-    Returns:
-        Parsed dictionary containing scenario configuration
+def get_scenarios_paths() -> dict[str, str]:
+    """List all available scenario keys from YAML files in the scenarios directory.
 
-    Raises:
-        FileNotFoundError: If specified file doesn't exist
-        yaml.YAMLError: If YAML parsing fails
+    Returns
+    -------
+    dict[str,dict] of scenarios names
     """
-    yaml_path = CONFIG_DIR / file_name
-    with yaml_path.open("r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+    scenarios_paths = {}
+    for yaml_file in __SCENARIO_DIR__.glob("*.yaml"):
+        content = yaml.safe_load(yaml_file.read_text(encoding="utf-8"))
+        if content:  # Only process if file is not empty
+            curr_scenario_path = dict(
+                zip(content.keys(), (yaml_file.stem,) * len(content), strict=True)
+            )
+            scenarios_paths = {**scenarios_paths, **curr_scenario_path}
+    return dict(sorted(scenarios_paths.items()))
+
+
+def list_scenarios() -> list[str]:
+    """List all available scenario keys from YAML files in the scenarios directory.
+
+    Returns
+    -------
+    list[str] of scenarios names
+    """
+    return list(get_scenarios_paths().keys())
+
+
+def load_attack_scenario(scenario_name: str) -> AttackScenario:
+    r"""Load the attack scenario from the YAML file.
+
+    Parameters
+    ----------
+    scenario_name : str
+        The name of the scenario to load.
+
+    Returns
+    -------
+    AttackScenario
+        The loaded attack scenario.
+    """
+    scenarios_path = get_scenarios_paths()
+    if scenario_name not in scenarios_path:
+        msg = f"Scenario '{scenario_name}' not found."
+        raise ValueError(msg)
+
+    scenario_path = __SCENARIO_DIR__ / f"{scenarios_path[scenario_name]}.yaml"
+    scenarios_dict = yaml.safe_load(scenario_path.read_text(encoding="utf-8"))
+    scenarios_list = scenarios_dict[scenario_name]
+    return [
+        AttackScenario(hp=HyperParameters(**scn.pop("hp")), **scn)
+        for scn in scenarios_list
+    ]
