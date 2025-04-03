@@ -23,7 +23,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-full = ["transferbench"]
+full = [
+    "transferbench",
+    "robustbench >= 1.1",
+    "git+https://github.com/fra31/auto-attack",
+    "timm==1.0.9",
+]
 
 [tool.setuptools.packages.find]
 where = ["."] # Auto-find all Python packages
