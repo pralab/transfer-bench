@@ -1,6 +1,7 @@
 r"""Define the class for the attack evaluation."""
 
 from dataclasses import asdict
+import logging
 
 import torch
 from tqdm.autonotebook import tqdm
@@ -133,6 +134,16 @@ class AttackEval:
             result = attack.run(inputs, *labels)
             success += result["success"].sum().item()
             queries += result["queries"][result["success"]].sum().item()
+
+            for sample_id in range(inputs.shape[0]):
+                logging.info(
+                    [
+                        result["logits"][sample_id].tolist(),
+                        result["predictions"][sample_id].tolist(),
+                        result["success"][sample_id],
+                        result["queries"][sample_id],
+                    ]
+                )
 
             pbar.set_postfix(
                 {
