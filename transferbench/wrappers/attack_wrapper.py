@@ -71,13 +71,13 @@ class AttackWrapper:
             ModelWrapper(surrogate_model) for surrogate_model in surrogate_models
         ]
 
-    def reset(self) -> None:
+    def reset(self, inputs: Tensor) -> None:
         r"""Set models in eval and reset the counters."""
         self.victim_model.eval()
-        self.victim_model.counter.reset()
+        self.victim_model.counter.reset(inputs)
         for model in self.surrogate_models:
             model.eval()
-            model.counter.reset()
+            model.counter.reset(inputs)
 
     def check_constraints(self, inputs: Tensor, adv: Tensor) -> bool:
         r"""Check if an example satisfies the constraints."""
@@ -87,13 +87,12 @@ class AttackWrapper:
 
     def check_queries(self) -> None:
         r"""Check that the maximum number of queries has not been exceeded."""
-        bqueries = self.victim_model.counter.forwarded_batches
-        assert bqueries <= self.hp.maximum_queries, "Query budget exceeded."
-        return bqueries, self.victim_model.counter.get_forwards()
+        forwards = self.victim_model.counter.get_forwards()
+        assert forwards <= self.hp.maximum_queries, "Query budget exceeded."
 
     def check_black_box(self) -> None:
         r"""Check if the gradient of the victim has been used."""
-        assert len(self.victim_model.counter.get_backwards()) == 0, (
+        assert self.victim_model.counter.get_backwards() == 0, (
             "The gradient of the victim model has been used. "
             "The attack is not black-box."
         )
@@ -103,10 +102,11 @@ class AttackWrapper:
         self, inputs: Tensor, labels: Tensor, targets: Optional[Tensor] = None
     ) -> tuple[Tensor, Tensor]:
         r"""Check if the attack was successful."""
-        predictions = self.victim_model(inputs).argmax(dim=-1)
+        logits = self.victim_model(inputs)
+        predictions = logits.argmax(dim=-1)
         if targets is not None:
             return predictions, predictions == targets
-        return predictions, predictions != labels
+        return predictions, logits, predictions != labels
 
     def run(
         self, inputs: Tensor, labels: Tensor, targets: Optional[Tensor] = None
@@ -122,14 +122,15 @@ class AttackWrapper:
             **asdict(self.hp),
         )
         self.check_constraints(adv, inputs)
-        bqueries, queries = self.check_queries()
-        pred, success = self.evaluate_success(adv, labels, targets)
+        self.check_queries()
+        preds, logits, success = self.evaluate_success(adv, labels, targets)
+        queries = self.victim_model.counter.get_queries()
         return {
             "adv": adv,
-            "predictions": pred,
+            "logits": logits,
+            "predictions": preds,
             "success": success,
-            "batched_queries": bqueries,
-            "samples_queries": queries,
+            "queries": queries,
         }
 
     def __repr__(self) -> str:  # noqa: D105

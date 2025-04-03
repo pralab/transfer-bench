@@ -8,7 +8,11 @@ from torch import Tensor
 class CallableModel(Protocol):
     r"""A model is a callable that takes a tensor and returns a tensor."""
 
-    def __call__(self, inputs: Tensor, mask: Optional[Tensor] = None) -> Tensor: ...  # noqa: D102
+    def __call__(self, inputs: Tensor, forward_mask: Optional[Tensor] = None) -> Tensor:
+        r"""Callable that take a tensor as input and optionally a binary mask.
+
+        The forward_mask is used to counting the actual forward passes.
+        """
 
 
 # Hyperparameters class, to be inherited by the user for his own attack
