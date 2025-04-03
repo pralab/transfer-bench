@@ -105,7 +105,7 @@ class AttackWrapper:
         logits = self.victim_model(inputs)
         predictions = logits.argmax(dim=-1)
         if targets is not None:
-            return predictions, predictions == targets
+            return predictions, logits, predictions == targets
         return predictions, logits, predictions != labels
 
     def run(
