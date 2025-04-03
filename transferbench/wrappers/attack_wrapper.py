@@ -112,7 +112,7 @@ class AttackWrapper:
         self, inputs: Tensor, labels: Tensor, targets: Optional[Tensor] = None
     ) -> dict:
         r"""Run the attack on the given input."""
-        self.reset()
+        self.reset(inputs)
         adv = self.transfer_attack(
             self.victim_model.__call__,
             [model.__call__ for model in self.surrogate_models],
