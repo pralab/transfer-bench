@@ -123,8 +123,8 @@ class AttackWrapper:
         )
         self.check_constraints(adv, inputs)
         self.check_queries()
+        queries = self.victim_model.counter.get_queries().clone()
         preds, logits, success = self.evaluate_success(adv, labels, targets)
-        queries = self.victim_model.counter.get_queries()
         return {
             "adv": adv,
             "logits": logits,
