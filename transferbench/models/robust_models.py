@@ -1,18 +1,31 @@
+r"""Robust models from RobustBench."""
+
 from robustbench import load_model
 from torch import nn
 
+from transferbench.utils.cache import get_cache_dir
 
-def get_robustbench_model(name: str, dataset: str, threat_model: str = 'Linf') -> nn.Module:
-    """
-    @TODO: preprocessing in these models has been already done!
-    """
-    model = load_model(model_name=name, dataset=dataset, threat_model=threat_model)
-    return model
+MODELS_CACHE_DIR = get_cache_dir() / "models"
+MODELS = ["Xu2024MIMIR_Swin-L", "Amini2024MeanSparse_Swin-L"]
 
-def load_robust_mimir() -> nn.Module:
-    """ adversarial training defense """
-    return get_robustbench_model(name='Xu2024MIMIR_Swin-L', dataset='imagenet')
 
-def load_robust_meansparse() -> nn.Module:
-    """ post-training robustness defense"""
-    return get_robustbench_model(name='Amini2024MeanSparse_Swin-L', dataset='imagenet')
+def get_robustbench_model(
+    name: str, dataset: str, threat_model: str = "Linf"
+) -> nn.Module:
+    r"""Load a model from RobustBench."""
+    return load_model(
+        model_name=name,
+        dataset=dataset,
+        threat_model=threat_model,
+        model_dir=MODELS_CACHE_DIR,
+    )
+
+
+def list_models() -> list[str]:
+    """List all available models from RobustBench."""
+    return MODELS
+
+
+def get_models(model_name: str) -> nn.Module:
+    """Get a model from RobustBench."""
+    return get_robustbench_model(model_name, dataset="imagenet")
