@@ -1,0 +1,54 @@
+## Scenarios for attacks
+hetero-imagenet-inf:
+  - hp: 
+      maximum_queries: 50
+      p: "inf"
+      eps: 16/255
+    victim_model: "vgg19"
+    surrogate_models: ["resnet50", "resnext50_32x4d", "densenet121", "swin_b", "swin_t", "vit_b_32"]  # CNNPool
+    dataset: "ImageNetT" 
+
+  - hp: 
+      maximum_queries: 50
+      p: "inf"
+      eps: 16/255
+    victim_model: "resnext101_32x8d"
+    surrogate_models: ["inceptionv3", "convnext_base", "vgg16",  "swin_b", "swin_t", "vit_b_32"]  # ResPool
+    dataset: "ImageNetT"
+
+  - hp: 
+      maximum_queries: 50
+      p: "inf"
+      eps: 16/255
+    victim_model: "vit_b_16"
+    surrogate_models: ["inceptionv3", "convnext_base", "vgg16","resnet50", "resnext50_32x4d", "densenet121"]  # ViTPool
+    dataset: "ImageNetT"
+
+
+
+homo-imagenet-inf:
+  - hp: 
+      maximum_queries: 50
+      p: "inf"
+      eps: 16/255
+    victim_model: "vgg19"
+    surrogate_models: ["inceptionv3", "convnext_base", "vgg16"]  # CNNPool
+    dataset: "ImageNetT"
+
+  - hp: 
+      maximum_queries: 50
+      p: "inf"
+      eps: 16/255
+    victim_model: "resnext101_32x8d"
+    surrogate_models: ["resnet50", "resnext50_32x4d", "densenet121"]  # ResPool
+    dataset: "ImageNetT"
+
+  - hp: 
+      maximum_queries: 50
+      p: "inf"
+      eps: 16/255
+    victim_model: "vit_b_16"
+    surrogate_models: [ "swin_b", "swin_t", "vit_b_32"]  # ViTPool
+    dataset: "ImageNetT"
+  
+
