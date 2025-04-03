@@ -10,19 +10,8 @@ from transferbench.types import TransferAttack
 from . import attacks_zoo
 from .datasets import DataLoader, get_loader
 from .models import get_model
-from .scenarios import AttackScenario
-from .wrappers import AttackWrapper, HyperParameters
-
-SCENARIOS = {
-    "bases": (
-        AttackScenario(
-            hp=HyperParameters(maximum_queries=50, p="inf", eps=16 / 255),
-            victim_model="ResNet18",
-            surrogate_models=["ResNet50", "DenseNet121"],
-            dataset="ImageNetT",
-        ),
-    )
-}
+from .scenarios import AttackScenario, load_attack_scenario
+from .wrappers import AttackWrapper
 
 
 class AttackEval:
@@ -41,7 +30,7 @@ class AttackEval:
         - attack (str | TransferAttack): The attack step.
         """
         self.transfer_attack = transfer_attack
-        self.set_scenarios("bases")
+        self.set_scenarios("hetero-imagenet-inf")
 
     def set_scenarios(self, *scenarios: str | AttackScenario) -> None:
         r"""Set the scenarios to be evaluated."""
@@ -50,7 +39,7 @@ class AttackEval:
             if isinstance(scn, AttackScenario):
                 self.scenarios.append(scn)
             elif isinstance(scn, str):
-                self.scenarios.extend(SCENARIOS[scn])
+                self.scenarios.extend(load_attack_scenario(scn))
 
     def __repr__(self) -> str:  # noqa: D105
         return (
