@@ -6,7 +6,7 @@ from torch import nn
 from transferbench.utils.cache import get_cache_dir
 
 MODELS_CACHE_DIR = get_cache_dir() / "models"
-MODELS = ["Xu2024MIMIR_Swin-L", "Amini2024MeanSparse_Swin-L"]
+ALLOWED_MODELS = ["Xu2024MIMIR_Swin-L", "Amini2024MeanSparse_Swin-L"]
 
 
 def get_robustbench_model(
@@ -23,7 +23,7 @@ def get_robustbench_model(
 
 def list_models() -> list[str]:
     """List all available models from RobustBench."""
-    return MODELS
+    return ALLOWED_MODELS
 
 
 def get_model(model_name: str) -> nn.Module:
