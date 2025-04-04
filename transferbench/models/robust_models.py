@@ -26,6 +26,6 @@ def list_models() -> list[str]:
     return MODELS
 
 
-def get_models(model_name: str) -> nn.Module:
+def get_model(model_name: str) -> nn.Module:
     """Get a model from RobustBench."""
     return get_robustbench_model(model_name, dataset="imagenet")
