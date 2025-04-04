@@ -10,19 +10,19 @@ from transferbench.types import TransferAttack
 from . import attacks_zoo
 from .datasets import DataLoader, get_loader
 from .models import get_model
-from .scenarios import AttackScenario
-from .wrappers import AttackWrapper, HyperParameters
+from .scenarios import AttackScenario, load_attack_scenario
+from .wrappers import AttackWrapper
 
-SCENARIOS = {
-    "bases": (
-        AttackScenario(
-            hp=HyperParameters(maximum_queries=50, p="inf", eps=16 / 255),
-            victim_model="ResNet18",
-            surrogate_models=["ResNet50", "DenseNet121"],
-            dataset="ImageNetT",
-        ),
-    )
-}
+
+def collate_results(results: list[dict]) -> dict:
+    r"""Collate the results of the evaluation."""
+    collated_results = {}
+    for result in results:
+        for key, value in result.items():
+            if key not in collated_results:
+                collated_results[key] = []
+            collated_results[key].append(value)
+    return collated_results
 
 
 class AttackEval:
@@ -41,7 +41,7 @@ class AttackEval:
         - attack (str | TransferAttack): The attack step.
         """
         self.transfer_attack = transfer_attack
-        self.set_scenarios("bases")
+        self.set_scenarios("hetero-imagenet-inf")
 
     def set_scenarios(self, *scenarios: str | AttackScenario) -> None:
         r"""Set the scenarios to be evaluated."""
@@ -50,7 +50,7 @@ class AttackEval:
             if isinstance(scn, AttackScenario):
                 self.scenarios.append(scn)
             elif isinstance(scn, str):
-                self.scenarios.extend(SCENARIOS[scn])
+                self.scenarios.extend(load_attack_scenario(scn))
 
     def __repr__(self) -> str:  # noqa: D105
         return (
@@ -67,11 +67,12 @@ class AttackEval:
             results.append(
                 {
                     **asdict(scenario.hp),
-                    "transfer_attack": scenario.transfer_attack,
+                    "transfer_attack": self.transfer_attack,
                     "dataset": scenario.dataset,
-                    **result,
+                    "results": result,
                 }
             )
+        return results
 
     def evaluate_scenario(
         self,
@@ -125,14 +126,13 @@ class AttackEval:
         )
         success = 0
         queries = 0
+        results = []
         for inputs, *labels in pbar:
             inputs = inputs.to(device)
             labels = [label.to(device) for label in labels]
             result = attack.run(inputs, *labels)
             success += result["success"].sum().item()
-            failures = (~result["success"]).sum().item()
-            bqueries = result["batched_queries"]
-            queries += result["samples_queries"] - failures * bqueries
+            queries += result["queries"][result["success"]].sum().item()
 
             pbar.set_postfix(
                 {
@@ -141,7 +141,13 @@ class AttackEval:
                     "ASPQ": success / queries if queries > 0 else 0,
                 }
             )
-        return {
-            "success": success,
-            "queries": queries,
-        }
+            tgt, lbls = labels if len(labels) > 1 else (None, labels[0])
+            result = {**result, "inputs": inputs, "labels": lbls, "targets": tgt}
+            # move to cpu
+            result = {
+                key: value.cpu() if isinstance(value, torch.Tensor) else value
+                for key, value in result.items()
+            }
+            results.append(result)
+        pbar.close()
+        return results

@@ -75,11 +75,9 @@ def naive_avg(
     curr_adv = inputs.clone()
     for q in range(maximum_queries + 1):
         if q > 0:  # first query is avoided
-            success = (
-                victim_model(curr_adv).argmax(1) != labels
-                if targets is None
-                else victim_model(curr_adv).argmax(1) == targets
-            )
+            # victim model use the mask to properly count the forward passes sample-wise
+            preds = victim_model(curr_adv, ~success).argmax(1)
+            success = preds != labels if targets is None else preds == targets
         if success.all():
             break
 
