@@ -77,7 +77,7 @@ Additional included scenarios:
 
 ## Contributing 🤝
 
-We welcome contributions! For detailed guidelines on contributing to the `attacks_zoo`, please refer to the [Contribution Guide for attacks_zoo](attacks_zoo/README.md).
+We welcome contributions! For detailed guidelines on contributing to the `attacks_zoo`, please refer to the [Contribution Guide for attacks_zoo](transferbench/attacks_zoo/README.md).
 
 ## License 📜
 
