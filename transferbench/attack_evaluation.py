@@ -1,7 +1,7 @@
 r"""Define the class for the attack evaluation."""
 
-from dataclasses import asdict
 import logging
+from dataclasses import asdict
 
 import torch
 from tqdm.autonotebook import tqdm
@@ -13,17 +13,6 @@ from .datasets import DataLoader, get_loader
 from .models import get_model
 from .scenarios import AttackScenario, load_attack_scenario
 from .wrappers import AttackWrapper
-
-
-def collate_results(results: list[dict]) -> dict:
-    r"""Collate the results of the evaluation."""
-    collated_results = {}
-    for result in results:
-        for key, value in result.items():
-            if key not in collated_results:
-                collated_results[key] = []
-            collated_results[key].append(value)
-    return collated_results
 
 
 class AttackEval:
@@ -63,7 +52,7 @@ class AttackEval:
         r"""Run the evaluation."""
         results = []
         for scenario in self.scenarios:
-            print(f"Evaluating scenario: {scenario}")
+            logging.info("Evaluating scenario", extra={"scenario": scenario})  # noqa: LOG015
             result = self.evaluate_scenario(scenario, batch_size, device)
             results.append(
                 {
@@ -135,16 +124,6 @@ class AttackEval:
             success += result["success"].sum().item()
             queries += result["queries"][result["success"]].sum().item()
 
-            for sample_id in range(inputs.shape[0]):
-                logging.info(
-                    [
-                        result["logits"][sample_id].tolist(),
-                        result["predictions"][sample_id].tolist(),
-                        result["success"][sample_id],
-                        result["queries"][sample_id],
-                    ]
-                )
-
             pbar.set_postfix(
                 {
                     "ASR": success / len(data_loader.dataset),
@@ -152,8 +131,10 @@ class AttackEval:
                     "ASPQ": success / queries if queries > 0 else 0,
                 }
             )
-            tgt, lbls = labels if len(labels) > 1 else (None, labels[0])
-            result = {**result, "inputs": inputs, "labels": lbls, "targets": tgt}
+            tgt, lbls = (
+                labels if len(labels) > 1 else ((None,) * len(labels[0]), labels[0])
+            )
+            result = {**result, "labels": lbls, "targets": tgt}
             # move to cpu
             result = {
                 key: value.cpu() if isinstance(value, torch.Tensor) else value
