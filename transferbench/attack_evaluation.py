@@ -126,6 +126,7 @@ class AttackEval:
         )
         success = 0
         queries = 0
+        processed_samples = 0
         results = []
         for inputs, *labels in pbar:
             inputs = inputs.to(device)
@@ -133,11 +134,11 @@ class AttackEval:
             result = attack.run(inputs, *labels)
             success += result["success"].sum().item()
             queries += result["queries"][result["success"]].sum().item()
-
+            processed_samples += result["success"].shape[0]
             pbar.set_postfix(
                 {
-                    "ASR": success / len(data_loader.dataset),
-                    "AvgQ": queries / len(data_loader.dataset),
+                    "ASR": success / processed_samples,
+                    "AvgQ": queries / processed_samples,
                     "ASPQ": success / queries if queries > 0 else 0,
                 }
             )
