@@ -5,7 +5,6 @@ from .naive_avg import NaiveAvg
 __OPTIONAL__ = {
     "BASES": "transferbench.attacks_zoo.bases.BASES",
     "GAA": "transferbench.attacks_zoo.gaa.GAA",
-    "SimbaODS": "transferbench.attacks_zoo.simba_ods.SimbaODS",
 }
 
 

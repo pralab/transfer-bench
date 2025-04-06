@@ -1,0 +1,8 @@
+SimbaODS:
+  - hp:
+      eps: 5
+      p: 2
+      maximum_queries: 3000
+    victim_model: resnet50
+    surrogate_models: [vgg19, resnet34, densenet121 , mobilenet_v2]
+    dataset : ImageNetT

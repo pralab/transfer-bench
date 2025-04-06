@@ -29,7 +29,7 @@ def simba_ods(
     r"""SimBA attack with ODS."""
     # Define the loss function
     loss_fn = (
-        nn.CrossEntropyLoss(reducetion="none")
+        nn.CrossEntropyLoss(reduction="none")
         if targets is not None
         else partial(hinge_loss, kappa=0)
     )
@@ -40,38 +40,48 @@ def simba_ods(
     loss_best = loss_best * (-1 if targets is not None else 1)
     preds = logits.argmax(1)
     success = (preds != labels) if targets is None else (preds == targets)
+
+    tot_forwards = 1
     for _ in range(maximum_queries):
         if success.all():
             break
         random_directions = torch.rand_like(logits) * 2 - 1
-        indices = torch.randint(len(surrogate_models), (inputs.size(0),))
+        indices = torch.randint(
+            len(surrogate_models),
+            (inputs.size(0),),
+            device=inputs.device,
+            dtype=torch.long,
+        )
         adv.requires_grad_()
         with torch.enable_grad():
             loss = torch.stack(
-                (model(adv[~success]) for model in surrogate_models), dim=0
+                [model(adv[~success]) for model in surrogate_models], dim=0
             )
+            tot_forwards += 1
             loss = (
-                torch.gather(loss, 0, indices[~success]) * random_directions[~success]
-            )
-            loss.sum().backward()
-            delta = torch.renorm(adv.grad, dim=0, p=2, maxnorm=1)
-
-        for sign in [1, -1]:
-            curr_adv = adv + step_size * sign * delta
-            curr_adv = torch.clamp(curr_adv, 0, 1)
-            logits = victim_model(curr_adv, ~success)
-            loss_new = loss_fn(logits, labels if targets is None else targets)
-            loss_new = loss_new * (-1 if targets is not None else 1)
-            if loss_best < loss_new:
-                adv = curr_adv
-                loss_best = loss_new
-                best_logits = logits
-                break
-        # preds = logits.argmax(1) # original code. Bug fix below  # noqa: ERA001
-        preds = best_logits.argmax(1)
+                loss[indices, torch.arange(inputs.shape[0]), :][~success]
+                * random_directions[~success]
+            ).sum()
+            loss.backward()
+            delta = adv.grad / adv.grad.norm(p=2)  # not for all p
+        with torch.no_grad():
+            for sign in [1, -1]:
+                curr_adv = adv + step_size * sign * delta  # Unbouded
+                curr_adv = torch.clamp(curr_adv, 0, 1)
+                logits_new = victim_model(curr_adv, ~success)
+                tot_forwards += 1
+                loss_new = loss_fn(logits, labels if targets is None else targets)
+                loss_new = loss_new * (-1 if targets is not None else 1)
+                adv[loss_best < loss_new] = curr_adv[loss_best < loss_new]
+                logits[loss_best < loss_new] = logits_new[loss_best < loss_new]
+                if (loss_best < loss_new).all():
+                    break
+                loss_best[loss_best < loss_new] = loss_new[loss_best < loss_new]
+        preds = logits.argmax(1)
         success = (preds != labels) if targets is None else (preds == targets)
-        if success.all():
+        if success.all() or tot_forwards >= maximum_queries:
             break
+    return adv.detach()
 
 
 @dataclass
