@@ -24,4 +24,4 @@ def __getattr__(name: str):  # noqa: ANN202
     raise AttributeError(msg)
 
 
-__all__ = ["NaiveAvg"]
+__all__ = ["BASES", "GAA", "NaiveAvg"]

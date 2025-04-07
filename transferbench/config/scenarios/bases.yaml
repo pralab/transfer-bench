@@ -1,0 +1,29 @@
+
+bases:
+  - hp:
+      eps: 0.062745
+      p: "inf"
+      maximum_queries: 50
+    victim_model: "vgg19"
+    surrogate_models : 
+      - 'vgg16_bn'
+      - 'resnet18'
+      - 'squeezenet1_1'
+      - 'googlenet'
+      - 'mnasnet1_0'
+      - 'densenet161'
+      - 'efficientnet_b0'
+      - 'regnet_y_400mf'
+      - 'resnext101_32x8d'
+      - 'convnext_small'
+      - 'vgg13'
+      - 'resnet50'
+      - 'densenet201'
+      - 'inception_v3'
+      - 'shufflenet_v2_x1_0'
+      - 'mobilenet_v3_small'
+      - 'wide_resnet50_2'
+      - 'efficientnet_b4'
+      - 'regnet_x_400mf'
+      - 'vit_b_16'
+    dataset: "ImageNetT"
