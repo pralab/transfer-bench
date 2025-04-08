@@ -1,13 +1,13 @@
+from typing import Literal
 import torch
 from torch.utils.data import Subset
+import wandb
+from benchmark.wandb_logger import WandbLogger
 from transferbench.attack_evaluation import AttackEval
 from transferbench.scenarios import AttackScenario
 from transferbench.wrappers.attack_wrapper import HyperParameters
 from transferbench.datasets.datasets import ImageNetT
 import logging
-import wandb
-
-from wandb_logger import WandbHandler
 
 
 def attack(scenario, batch_size=128):
@@ -20,17 +20,15 @@ def attack(scenario, batch_size=128):
 
     if scenario is not None:
         evaluator.set_scenarios(scenario)
-    result = evaluator.run(batch_size=batch_size, device=DEFAUlT_DEVICE)
-    print("Evaluation completed.")
-    return result
+    return evaluator.run(batch_size=batch_size, device=DEFAUlT_DEVICE)
 
 
 def main():
     scenario = AttackScenario(
-        hp=HyperParameters(maximum_queries=4, p="inf", eps=16 / 255),
-        victim_model="vgg19",
+        hp=HyperParameters(maximum_queries=3, p="inf", eps=16 / 255),
+        victim_model="resnet18",
         surrogate_models=["resnet18", "resnet18"],
-        dataset=Subset(ImageNetT(), indices=list(range(3))),
+        dataset=Subset(ImageNetT(), indices=list(range(4))),
     )
 
     logging.basicConfig(
@@ -40,13 +38,9 @@ def main():
         filemode="w",
     )
 
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
-
-    wandb_handler = WandbHandler(project_name="my_project", config=scenario.__dict__)
-    logger.addHandler(wandb_handler)
-
-    attack(scenario)
+    results = attack(scenario, batch_size=3)
+    with WandbLogger("transfer-bench") as w:
+        w.upload(results)
 
 
 if __name__ == "__main__":
