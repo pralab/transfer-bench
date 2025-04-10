@@ -1,3 +1,5 @@
+r"""Handle results stored in Weights & Biases."""
+
 import wandb
 
 
@@ -11,7 +13,7 @@ class WandbReader:
         self.connection_url = f"{entity}/{project_name}"
         self.api = wandb.Api()
 
-    def get_runs(self):
+    def get_runs(self) -> list[str]:
         return self.api.runs(self.connection_url)
 
     def get_configs(self):
