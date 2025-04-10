@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+
+import wandb
+from argparse import ArgumentParser
+from benchmark.config import PROJECT_NAME, PROJECT_ENTITY
+from benchmark.wandb_reader import WandbReader
+
+
+def parse_args() -> None:
+    r"""Parse command line arguments."""
+    parser = ArgumentParser(description="Command line tool for managing tasks.")
+    subparser = parser.add_subparsers(dest="task", required=True)
+    # Subparsers for getting informations on the runs
+    parser_info = subparser.add_parser("info", help="Display informations on the runs.")
+    parser_info.add_argument(
+        dest="action",
+        choices=["summary", "active", "completed", "missing"],
+        default="summary",
+        type=str,
+        help="Info to display.",
+    )
+    # Subparser for running the experiments
+    parser_run = subparser.add_parser(
+        "run",
+        help="Run a job from the list of availables.",
+    )
+    parser_run.add_argument("--run-id", type=str, help="ID of the run to be executed.")
+    parser_run.add_argument("--device", type=str, help="Device to be used.")
+    parser_run.add_argument("--batch-size", type=int, help="Batch size to be used.")
+
+    return parser.parse_args()
+
+
+def get_info(action: str) -> None:
+    # Initialize the WandbReader
+    wandb_connections = WandbReader(PROJECT_ENTITY, PROJECT_NAME)
+    runs = wandb_connections.get_runs()
+    print(f"Found {len(runs)} runs.")
+    # Display the requested information
+    print(runs)
+
+
+if __name__ == "__main__":
+    # Login to Weights & Biases
+    wandb.login()
+    # Parse the command line arguments
+    from benchmark.utils import make_run_list
+
+    # make_run_list()
+    run_list = make_run_list()
+    print(run_list)
+    print("Run list created.")
