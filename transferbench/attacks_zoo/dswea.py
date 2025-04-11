@@ -1,81 +1,139 @@
-r"""DSWEA attack implementation"""  # TODO(add paper citation)
+from collections.abc import Callable
+from functools import partial
+from dataclasses import asdict, dataclass
+from typing import Optional
 
-import numpy as np
 import torch
 import torch.nn.functional as F
-from torch import Tensor, nn
+from torch import Tensor
 
-# from DSWEA.metrics import MarginLoss
-from tqdm import tqdm
+from .utils import hinge_loss
+from transferbench.types import CallableModel, TransferAttack
+
+from .naive_avg import grad_projection, lp_projection
 
 
-def compute_weights(gradients, sigma=2.5):
+def compute_weights(
+        gradients: list[Tensor] | Tensor,
+        sigma: float,
+) -> Tensor:
     grad_norms = torch.Tensor([grad.norm() for grad in gradients])
     weights_unnorm = torch.exp(-grad_norms / (sigma**2))
     return weights_unnorm / torch.sum(weights_unnorm)
 
 
-def dswea(
+def ensemble_gradient(
+    loss_fn: Callable[[Tensor, Tensor], Tensor],
     x: Tensor,
-    y_target: Tensor,
-    victim_model: nn.Module,
-    surrogate_models: list[nn.Module],
+    targets: Tensor,
+    surrogate_models: list[Callable[[Tensor], Tensor]],
+    weights: Tensor,
+) -> tuple[list[Tensor], Tensor, list[Tensor]]:
+    """
+    Compute the ensemble gradient for a batch of samples.
+
+    Parameters
+    ----------
+        loss_fn: A loss function that takes (prediction, target) and returns a scalar loss.
+        x: An input tensor of shape  b x 3 x h x w.
+        targets: The labels of shape b .
+        surrogate_models: List of models, each callable as model(x).
+        weights: Tensor of weights (same length as surrogate_models) used to weight each model's gradient.
+
+    Returns
+    -------
+        A tuple (grads_ens, g_ens, loss_ens):
+            grads_ens: A list of gradients for each model (each matching the shape of x).
+            g_ens: The weighted sum of gradients (same shape as x).
+            loss_ens: A list containing each model's scalar loss.
+    """
+    xs_ens = [x.clone().requires_grad_() for _ in surrogate_models]
+    loss_ens = []
+    for model, x_loc in zip(surrogate_models, xs_ens):
+        pred = model(x_loc)
+        loss = loss_fn(pred, targets).mean(dim=-1)
+        loss_ens.append(loss)
+    grads_ens = torch.autograd.grad(loss_ens, xs_ens)
+    g_ens = sum(w * grad for w, grad in zip(weights, grads_ens))
+    return grads_ens, g_ens, loss_ens
+
+
+def dswea(
+    victim_model: CallableModel,    
+    surrogate_models: list[CallableModel],
+    inputs: Tensor,
+    labels: Tensor,
+    targets: Optional[Tensor] = None,
+    maximum_queries: int = 50,
+    p: float | str = "inf",
+    eps: float = 16 / 255,
     alpha: float = 0.01,
-    T: int = 100,
-    M: int = 20,
-    epsilon: float = 16.0 / 255,
-    Q: int = 100,
-    targeted: bool = True,
-):
-    """
-    Implement the dswea attack from the original paper.
+    T: int = 10,
+    M: int = 8,
+    sigma: float = 2.5,
+) -> Tensor:
+    r"""
+    Parameters
+    ----------
+    - victim_model (CallableModel): The victim model.
+    - surrogate_models (list[CallableModel]): The surrogate models.
+    - inputs (Tensor): The original input samples.
+    - labels (Tensor): The labels.
+    - targets (Tensor, optional): The target labels for targeted attack.
+    - eps (float): The epsilon of the constraint.
+    - p (float or str): The norm for the constraint.
+    - maximum_queries (int): The maximum number of queries.
+    - alpha (float): The step size.
+    - T (int): Number of external iterations.
+    - M (int): Number of internal iterations.
+    - sigma (float): Parameter used in computing weights.
 
-    Args:
-        x: input example (benign)
-        y_target: target class
-        victim_model
-        surrogate_models: list of surrogate models
-        alpha: step size
-        T: external iterations
-        M: internal iterations
-        epsilon: maximum perturbation
-        Q: query limit
+    Returns
+    -------
+    - Tensor: The adversarial examples (same shape as `inputs`).
     """
-    x_orig = x.clone()
+    # Save original inputs/labels (and targets) for constraint checking and indexing.
+    x_orig = inputs.clone()
+    labels_orig = labels.clone()
+    if targets is not None:
+        targets_orig = targets.clone()
+    else:
+        targets_orig = None
+
     num_surrogates = len(surrogate_models)
-
-    # Initialize loss function
-    loss_fn = MarginLoss()
-
-    # Initialize gradients
+    loss_fn = hinge_loss
     grads_ens = [None] * num_surrogates
-    weights = torch.ones(num_surrogates) / num_surrogates
-    # moved outside of the loop
-    x_star = x_orig.clone()  # starting from the original image
-    for q in tqdm(range(Q), desc="Query Loop"):
+    weights = torch.ones(num_surrogates, device=inputs.device) / num_surrogates
+    ball_projection = partial(lp_projection, eps=eps, p=p)
+    dot_projection = partial(grad_projection, p=p)
+    # success is per original sample.
+    success = torch.zeros_like(labels_orig, dtype=torch.bool)
+
+    # x_star keeps the full batch of adversarial examples.
+    x_star = x_orig.clone()
+
+    for q in range(maximum_queries):
         if q > 0:
-            weights = compute_weights(grads_ens)
-        # Initialize for external loop
-        # G = torch.zeros_like(x_orig)  # not used
-        # x_star = x_orig.clone()  # not starting from the last_adv
+            weights = compute_weights(grads_ens, sigma)
+
+        # Instead of shrinking the batch, we identify the unresolved indices.
+        unresolved_mask = ~success
+        if not unresolved_mask.any():
+            break
+
         # External iteration
         for _ in range(T):
-            # Compute ensemble gradient
-            xs_ens = [x_star.clone().requires_grad_() for _ in range(num_surrogates)]
-            loss_ens = [
-                loss_fn(model(x_loc), y_target)
-                for model, x_loc in zip(surrogate_models, xs_ens, strict=True)
-            ]
-            grads_ens = torch.autograd.grad(loss_ens, xs_ens)
+            grads_ens, g_ens, loss_ens = ensemble_gradient(
+                loss_fn=loss_fn,
+                x=x_star,
+                targets=targets,
+                surrogate_models=surrogate_models,
+                weights=weights,
+            )
 
-            # Ensemble gradient
-            g_ens = sum(w * grad for (w, grad) in zip(weights, grads_ens, strict=True))
-
-            # Initialize for internal loop
-            G_bar = torch.zeros_like(x_orig)
+            G_bar = torch.zeros_like(x_star)
             x_bar = x_star.clone()
 
-            # Sort surrogates by loss
             sorted_idx = sorted(
                 range(num_surrogates), key=loss_ens.__getitem__, reverse=True
             )
@@ -84,38 +142,44 @@ def dswea(
             for m in range(M):
                 k = sorted_idx[m % num_surrogates]
 
-                # Compute unbiased gradient using only surrogate model k
                 x_bar.requires_grad = True
                 x_bar.grad = None
 
                 pred_x_bar = surrogate_models[k](x_bar)
-                loss_x_bar = loss_fn(pred_x_bar, y_target)
+                loss_x_bar = loss_fn(pred_x_bar, targets).mean(dim=-1)
                 grad_x_bar = torch.autograd.grad(loss_x_bar, x_bar)[0]
                 g_bar = weights[k] * (grad_x_bar - grads_ens[k]) + g_ens
                 with torch.no_grad():
                     G_bar = G_bar + g_bar
-                    x_bar = x_bar - alpha * torch.sign(G_bar)
-                    x_bar = (x_bar - x_orig).clamp(-epsilon, epsilon) + x_orig
+                    x_bar - alpha * torch.sign(G_bar)
+                    x_bar = (x_bar - x_orig).clamp(-eps, eps) + x_orig
                     x_bar = x_bar.clamp(0, 1)
-
-            # G = G+G_bar  # not used
             x_star = x_bar
-            # x_star = x_bar - alpha * torch.sign(G)  # Dont exploit the x_bar anymore
-            # x_star = (x_star - x_orig).clamp(-epsilon, epsilon) + x_orig
-            # x_star = x_star.clamp(0, 1)
 
-        # Query victim model to check if attack is successful
         with torch.no_grad():
             victim_logits = victim_model(x_star)
             victim_pred = victim_logits.argmax(dim=1)
-            q += 1  # Increment query count
-            print(
-                f"Query {q}: Victim model predicting class {victim_pred.item()}, Target is {y_target.item()}"
-            )
 
-            if victim_pred == y_target:
-                print("Attack successful, Query:", q)
-                return x_star, q  # Attack successful
 
-    # If we've exceeded query limit, return last adversarial example
-    return x_star, -1
+        if targets_orig is None:
+            success = victim_pred != labels_orig
+        else:
+            success = victim_pred == targets_orig
+
+        if success.all():
+            return x_star
+
+    # If query limit is exceeded, return the full batch of (possibly partially attacked) examples.
+    return x_star
+
+
+@dataclass
+class DSWEAHyperParams:
+    r"""Hyperparameters for DSWEA attack."""
+    alpha: float = 0.01
+    T: int = 10
+    M: int = 8 
+    sigma: float = 2.5
+
+# Wrap the attack to be used in the evaluators.
+DSWEA: TransferAttack = partial(dswea, **asdict(DSWEAHyperParams()))
