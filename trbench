@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 
-import wandb
 from argparse import ArgumentParser
-from benchmark.config import PROJECT_NAME, PROJECT_ENTITY
+
+import wandb
+from benchmark.config import PROJECT_ENTITY, PROJECT_NAME
 from benchmark.wandb_reader import WandbReader
+from benchmark.utils import make_run_list, get_config_from_run, get_path_from_run, Run
+from pandas import DataFrame
 
 
 def parse_args() -> None:
@@ -31,22 +34,39 @@ def parse_args() -> None:
     return parser.parse_args()
 
 
+DISPLAYED_COLUMNS = ["id", "attack", "victim_model", "dataset", "campaign"]
+
+
+def format_runs(runs: list[Run]) -> str:
+    r"""Format the runs for display."""
+
+    ## get pandas dataframe
+    return (
+        DataFrame([get_config_from_run(run) for run in runs])
+        .loc[:, DISPLAYED_COLUMNS]
+        .to_string(index=False)
+    )
+
+
 def get_info(action: str) -> None:
     # Initialize the WandbReader
     wandb_connections = WandbReader(PROJECT_ENTITY, PROJECT_NAME)
     runs = wandb_connections.get_runs()
     print(f"Found {len(runs)} runs.")
     # Display the requested information
-    print(runs)
+    [print(format_runs(runs)) for run in runs]
+
+
+def run(run_id: str, device: str, batch_size: int) -> None:
+    # Initialize the WandbReader
+    wandb_connections = WandbReader(PROJECT_ENTITY, PROJECT_NAME)
 
 
 if __name__ == "__main__":
     # Login to Weights & Biases
     wandb.login()
     # Parse the command line arguments
-    from benchmark.utils import make_run_list
 
     # make_run_list()
     run_list = make_run_list()
-    print(run_list)
-    print("Run list created.")
+    print(format_runs(run_list))

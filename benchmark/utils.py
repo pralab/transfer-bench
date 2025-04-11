@@ -1,36 +1,65 @@
+from dataclasses import dataclass
 from hashlib import sha1
+from itertools import product
 
+from transferbench.attacks_zoo import __all__ as attacks_list
 from transferbench.scenarios import AttackScenario, list_scenarios, load_attack_scenario
+from transferbench.types import TransferAttack
 
-from .config import CAMPAIGNS
+from .config import ALLOWED_SCENARIOS
 
 
-def get_path_from(attack: str, dataset: str, campaign: str, scenario: str):
+@dataclass
+class Run:
+    """Class to represent a campaign."""
+
+    attack: str | TransferAttack
+    scenario: AttackScenario
+    campaign: str
+
+    def __post_init__(self) -> None:
+        """Post init method to set the id."""
+        self.id = sha1(str(self).encode("utf-8")).hexdigest()[-5:]  # noqa: S324
+
+
+def get_path_from_run(run: Run) -> str:
     """Get the path to the specific attack on a dataset, campaign and scenario."""
-    return f"results/{attack}/{dataset}/{campaign}/{scenario}"
+    scenario_infos = (
+        f"{run.scenario.victim_model}_"
+        f"q-{run.scenario.hp.maximum_queries}_"
+        f"p-{run.scenario.hp.p}_"
+        f"eps-{run.scenario.hp.eps}"
+    )
+    return (
+        f"results/{run.attack}/{run.scenario.dataset}/{run.campaign}/{scenario_infos}"
+    )
 
 
-def get_scenario_info(scn: AttackScenario) -> dict[str, str]:
-    """Get the scenario info from a list of scenarios."""
-    return {
-        "dataset": scn.dataset,
-        "victim_model": scn.victim_model,
-        "surrogate_models": scn.surrogate_models,
-        "max_queries": str(scn.hp.maximum_queries),
-        "p": str(scn.hp.p),
-        "eps": str(scn.hp.eps),
+def get_config_from_run(run: Run) -> dict:
+    """Get the config from the run."""
+    wandb_config = {
+        "attack": run.attack,
+        "dataset": run.scenario.dataset,
+        "campaign": run.campaign,
+        "victim_model": run.scenario.victim_model,
+        "maximum_queries": run.scenario.hp.maximum_queries,
+        "p": run.scenario.hp.p,
+        "eps": run.scenario.hp.eps,
+        "id": run.id,
     }
+    for i, surrog in enumerate(sorted(run.scenario.surrogate_models)):
+        wandb_config[f"surrogate_model_{i}"] = surrog
+
+    return wandb_config
 
 
 def make_run_list() -> None:
     """Make a list of all the runs."""
-    scenario_names = list_scenarios()
+    scenario_names = [scn for scn in list_scenarios() if scn in ALLOWED_SCENARIOS]
     run_list = []
-    for scn_name in scenario_names:
-        if scn_name in CAMPAIGNS:
-            scns = load_attack_scenario(scn_name)
-            for scn in scns:
-                scn_dict = get_scenario_info(scn)
-                scn_dict["id"] = sha1(str(scn_dict).encode("utf-8")).hexdigest()[-5:]  # noqa: S324
-                run_list.append(scn_dict)
+    for scn_name, attack in product(scenario_names, attacks_list):
+        scns = load_attack_scenario(scn_name)
+        for scn in scns:
+            run = Run(attack=attack, scenario=scn, campaign=scn_name.split("-")[0])
+            run_list.append(run)
     return run_list
