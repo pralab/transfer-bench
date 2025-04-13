@@ -14,8 +14,8 @@ from .naive_avg import grad_projection, lp_projection
 
 
 def compute_weights(
-        gradients: list[Tensor] | Tensor,
-        sigma: float,
+    gradients: list[Tensor] | Tensor,
+    sigma: float,
 ) -> Tensor:
     grad_norms = torch.Tensor([grad.norm() for grad in gradients])
     weights_unnorm = torch.exp(-grad_norms / (sigma**2))
@@ -49,17 +49,21 @@ def ensemble_gradient(
     """
     xs_ens = [x.clone().requires_grad_() for _ in surrogate_models]
     loss_ens = []
-    for model, x_loc in zip(surrogate_models, xs_ens):
+    for model, x_loc in zip(surrogate_models, xs_ens, strict=False):
         pred = model(x_loc)
-        loss = loss_fn(pred, targets).mean(dim=-1)
+        loss = loss_fn(pred, targets)
         loss_ens.append(loss)
-    grads_ens = torch.autograd.grad(loss_ens, xs_ens)
-    g_ens = sum(w * grad for w, grad in zip(weights, grads_ens))
+    grads_ens = torch.autograd.grad(
+        [loss.sum() for loss in loss_ens],
+        xs_ens,
+        retain_graph=False,
+    )
+    g_ens = sum(w * grad for w, grad in zip(weights, grads_ens, strict=False))
     return grads_ens, g_ens, loss_ens
 
 
 def dswea(
-    victim_model: CallableModel,    
+    victim_model: CallableModel,
     surrogate_models: list[CallableModel],
     inputs: Tensor,
     labels: Tensor,
@@ -72,7 +76,8 @@ def dswea(
     M: int = 8,
     sigma: float = 2.5,
 ) -> Tensor:
-    r"""
+    r"""DSWEA attack implementation.
+
     Parameters
     ----------
     - victim_model (CallableModel): The victim model.
@@ -95,15 +100,15 @@ def dswea(
     # Save original inputs/labels (and targets) for constraint checking and indexing.
     x_orig = inputs.clone()
     labels_orig = labels.clone()
-    if targets is not None:
-        targets_orig = targets.clone()
-    else:
-        targets_orig = None
+    targets_orig = targets.clone() if targets is not None else None
 
     num_surrogates = len(surrogate_models)
     loss_fn = hinge_loss
     grads_ens = [None] * num_surrogates
-    weights = torch.ones(num_surrogates, device=inputs.device) / num_surrogates
+    weights = (
+        torch.ones(num_surrogates, device=inputs.device, dtype=torch.float64)
+        / num_surrogates
+    )
     ball_projection = partial(lp_projection, eps=eps, p=p)
     dot_projection = partial(grad_projection, p=p)
     # success is per original sample.
@@ -134,32 +139,29 @@ def dswea(
             G_bar = torch.zeros_like(x_star)
             x_bar = x_star.clone()
 
-            sorted_idx = sorted(
-                range(num_surrogates), key=loss_ens.__getitem__, reverse=True
-            )
+            sorted_idx = torch.stack(loss_ens, dim=1).sort(1).indices
 
             # Internal iteration
             for m in range(M):
-                k = sorted_idx[m % num_surrogates]
+                k = sorted_idx[:, m % num_surrogates]
 
                 x_bar.requires_grad = True
                 x_bar.grad = None
 
                 pred_x_bar = surrogate_models[k](x_bar)
-                loss_x_bar = loss_fn(pred_x_bar, targets).mean(dim=-1)
+                loss_x_bar = loss_fn(pred_x_bar, targets).sum(dim=-1)
                 grad_x_bar = torch.autograd.grad(loss_x_bar, x_bar)[0]
                 g_bar = weights[k] * (grad_x_bar - grads_ens[k]) + g_ens
                 with torch.no_grad():
                     G_bar = G_bar + g_bar
-                    x_bar - alpha * torch.sign(G_bar)
-                    x_bar = (x_bar - x_orig).clamp(-eps, eps) + x_orig
+                    x_bar = x_bar - alpha * dot_projection(G_bar)
+                    x_bar = ball_projection(x_orig, x_bar)
                     x_bar = x_bar.clamp(0, 1)
             x_star = x_bar
 
         with torch.no_grad():
-            victim_logits = victim_model(x_star)
+            victim_logits = victim_model(x_star, unresolved_mask)
             victim_pred = victim_logits.argmax(dim=1)
-
 
         if targets_orig is None:
             success = victim_pred != labels_orig
@@ -176,10 +178,12 @@ def dswea(
 @dataclass
 class DSWEAHyperParams:
     r"""Hyperparameters for DSWEA attack."""
+
     alpha: float = 0.01
     T: int = 10
-    M: int = 8 
+    M: int = 8
     sigma: float = 2.5
+
 
 # Wrap the attack to be used in the evaluators.
 DSWEA: TransferAttack = partial(dswea, **asdict(DSWEAHyperParams()))
