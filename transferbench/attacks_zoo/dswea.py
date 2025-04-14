@@ -1,16 +1,15 @@
 from collections.abc import Callable
-from functools import partial
 from dataclasses import asdict, dataclass
+from functools import partial
 from typing import Optional
 
 import torch
-import torch.nn.functional as F
 from torch import Tensor
 
-from .utils import hinge_loss
 from transferbench.types import CallableModel, TransferAttack
 
 from .naive_avg import grad_projection, lp_projection
+from .utils import hinge_loss
 
 
 def compute_weights(
@@ -23,16 +22,11 @@ def compute_weights(
     return weights_unnorm / torch.sum(weights_unnorm, dim=1, keepdim=True)
 
 
-def normalize_weights(weights: Tensor) -> Tensor:
-    r"""Normalize the weights."""
-    return weights.softmax(dim=-1)
-
-
 def initialize_weights(inputs: Tensor, num_surrogates: int) -> Tensor:
     r"""Initialize the weights for the surrogate models."""
     weights = [1.0 / num_surrogates] * num_surrogates
     weights = Tensor(weights).unsqueeze(0).repeat(inputs.shape[0], 1)
-    weights = normalize_weights(weights)
+    weights = weights.softmax(dim=-1)
     return weights.to(inputs.device)
 
 
@@ -70,7 +64,6 @@ def ensemble_gradient(
     grads_ens = torch.autograd.grad(
         [loss.sum() for loss in loss_ens],
         xs_ens,
-        retain_graph=False,
     )
     g_ens = sum(
         w.view(-1, 1, 1, 1) * grad
@@ -149,7 +142,7 @@ def dswea(
             G_bar = torch.zeros_like(x_star)
             x_bar = x_star.clone()
 
-            sorted_idx = torch.stack(loss_ens, dim=1).sort(1).indices
+            sorted_idx = torch.stack(loss_ens, dim=1).sort(1, descending=True).indices
 
             # Internal iteration
             for m in range(M):
@@ -175,8 +168,8 @@ def dswea(
 
                 with torch.no_grad():
                     G_bar = G_bar + g_bar
-                    x_bar = x_bar - alpha * dot_projection(G_bar)
-                    x_bar = ball_projection(x_orig, x_bar)
+                    x_bar = x_bar - alpha * torch.sign(G_bar)
+                    x_bar = (x_bar - x_orig).clamp(-eps, eps) + x_orig
                     x_bar = x_bar.clamp(0, 1)
             x_star[~success] = x_bar[~success]
 
@@ -187,7 +180,7 @@ def dswea(
         success = victim_pred != labels if targets is None else (victim_pred == targets)
 
         if success.all():
-            return x_star
+            break
 
     # If query limit is exceeded, return the full batch of (possibly partially attacked) examples.
     return x_star
@@ -197,7 +190,7 @@ def dswea(
 class DSWEAHyperParams:
     r"""Hyperparameters for DSWEA attack."""
 
-    alpha: float = 0.01
+    alpha: float = 3 * 0.16 / 255
     T: int = 10
     M: int = 8
     sigma: float = 2.5
