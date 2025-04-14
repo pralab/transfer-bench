@@ -1,5 +1,5 @@
 ## Scenarios for attacks
-hetero-imagenet-inf:
+etero-imagenet-inf:
   - hp: 
       maximum_queries: 50
       p: "inf"
@@ -26,7 +26,7 @@ hetero-imagenet-inf:
 
 
 
-homo-imagenet-inf:
+omeo-imagenet-inf:
   - hp: 
       maximum_queries: 50
       p: "inf"

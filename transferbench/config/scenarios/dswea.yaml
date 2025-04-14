@@ -1,0 +1,20 @@
+
+dswea:
+  - hp:
+      eps: 0.062745
+      p: "inf"
+      maximum_queries: 10
+    victim_model: "vgg19"
+    surrogate_models : 
+      - 'vgg16'
+      - 'resnet18'
+      - 'squeezenet1_1'
+      - 'googlenet'
+      - 'mnasnet1_0'
+      - 'densenet161'
+      - 'efficientnet_b0'
+      - 'regnet_x_400mf'
+      - 'resnext101_32x8d'
+      - 'convnext_small'
+      - 'vgg13'
+    dataset: "ImageNetT"
