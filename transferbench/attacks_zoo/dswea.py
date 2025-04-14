@@ -99,7 +99,6 @@ def dswea(
     - eps (float): The epsilon of the constraint.
     - p (float or str): The norm for the constraint.
     - maximum_queries (int): The maximum number of queries.
-    - alpha (float): The step size.
     - T (int): Number of external iterations.
     - M (int): Number of internal iterations.
     - sigma (float): Parameter used in computing weights.
@@ -113,6 +112,7 @@ def dswea(
     labels_orig = labels.clone()
     targets_loss = targets.clone() if targets is not None else labels
 
+    alpha = 3 * eps / 10
     num_surrogates = len(surrogate_models)
     loss_fn = hinge_loss
     grads_ens = None
@@ -168,8 +168,8 @@ def dswea(
 
                 with torch.no_grad():
                     G_bar = G_bar + g_bar
-                    x_bar = x_bar - alpha * torch.sign(G_bar)
-                    x_bar = (x_bar - x_orig).clamp(-eps, eps) + x_orig
+                    x_bar = x_bar - alpha * dot_projection(G_bar)
+                    x_bar = ball_projection(x_orig, x_bar)
                     x_bar = x_bar.clamp(0, 1)
             x_star[~success] = x_bar[~success]
 
@@ -190,7 +190,6 @@ def dswea(
 class DSWEAHyperParams:
     r"""Hyperparameters for DSWEA attack."""
 
-    alpha: float = 3 * 0.16 / 255
     T: int = 10
     M: int = 8
     sigma: float = 2.5
