@@ -4,9 +4,10 @@ from argparse import ArgumentParser
 
 import wandb
 from benchmark.config import PROJECT_ENTITY, PROJECT_NAME
+from benchmark.utils import Run, get_config_from_run, get_path_from_run, make_run_list
 from benchmark.wandb_reader import WandbReader
-from benchmark.utils import make_run_list, get_config_from_run, get_path_from_run, Run
 from pandas import DataFrame
+from wandb.sdk.wandb_run import Run as WandbRun  # noqa: TC002
 
 
 def parse_args() -> None:
@@ -34,27 +35,43 @@ def parse_args() -> None:
     return parser.parse_args()
 
 
-DISPLAYED_COLUMNS = ["id", "attack", "victim_model", "dataset", "campaign"]
+_COLUMNS = ["id", "status", "attack", "victim_model", "dataset", "campaign"]
 
 
-def format_runs(runs: list[Run]) -> str:
+def collect_runs() -> str:
     r"""Format the runs for display."""
-
-    ## get pandas dataframe
+    # Initialize the WandbReader
+    wandb_connections = WandbReader(PROJECT_ENTITY, PROJECT_NAME)
+    remote_runs: list[WandbRun] = wandb_connections.get_runs()
+    local_runs: list[Run] = make_run_list()
+    df_remote_runs = DataFrame(
+        [
+            {**run.config, "status": run.state, "remote_id": run.id}
+            for run in remote_runs
+        ]
+    )
+    ## get local pandas dataframe
+    df_local_runs = DataFrame([get_config_from_run(run) for run in local_runs])
+    # Merge the two dataframes
+    if df_remote_runs.empty:
+        df_remote_runs = DataFrame([], columns=_COLUMNS + ["remote_id"])
+    df_runs = df_remote_runs.merge(
+        df_local_runs,
+        how="right",
+        on=_COLUMNS,
+        indicator=True,
+    )
+    df_runs.status = df_runs.status.fillna("missing")
     return (
-        DataFrame([get_config_from_run(run) for run in runs])
-        .loc[:, DISPLAYED_COLUMNS]
-        .to_string(index=False)
+        df_runs.loc[:, _COLUMNS]
+        .sort_values(by=["status", "attack", "victim_model", "dataset", "campaign"])
+        .reset_index(drop=True)
     )
 
 
 def get_info(action: str) -> None:
-    # Initialize the WandbReader
-    wandb_connections = WandbReader(PROJECT_ENTITY, PROJECT_NAME)
-    runs = wandb_connections.get_runs()
-    print(f"Found {len(runs)} runs.")
-    # Display the requested information
-    [print(format_runs(runs)) for run in runs]
+    runs = collect_runs()
+    print(runs)
 
 
 def run(run_id: str, device: str, batch_size: int) -> None:
@@ -68,5 +85,5 @@ if __name__ == "__main__":
     # Parse the command line arguments
 
     # make_run_list()
-    run_list = make_run_list()
-    print(format_runs(run_list))
+    get_info("summary")
+    print()
