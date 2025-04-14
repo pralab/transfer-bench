@@ -8,6 +8,7 @@ import torch
 from torch import Tensor, nn
 
 from transferbench.types import CallableModel, TransferAttack
+import numpy as np
 
 L2 = float("2")
 Linf = float("inf")
@@ -40,6 +41,7 @@ def gaa(
     eps: Optional[float] = None,
     p: Optional[float | str] = None,
     maximum_queries: Optional[int] = None,
+    steps: int = 10,
     decay: float = 1.0,
     alpha: float = 2 / 255,
 ) -> Tensor:
@@ -51,11 +53,14 @@ def gaa(
     adv_inputs = inputs.clone().detach().requires_grad_()
     outputs_victim = None
     success = torch.zeros_like(labels, dtype=torch.bool)
-    for _ in range(maximum_queries):
-        adv_inputs.requires_grad_()
-
-        with torch.no_grad():
-            outputs_victim = victim_model(adv_inputs, ~success)
+    maximum_queries = min(maximum_queries, steps)
+    query_position = [
+        int(np.floor(steps * i / maximum_queries)) for i in range(maximum_queries)
+    ]
+    for _ in range(steps):
+        if _ in query_position:
+            with torch.no_grad():
+                outputs_victim = victim_model(adv_inputs, ~success)
 
         # evaluate the success
         pred_victim = outputs_victim.argmax(-1)
@@ -66,9 +71,9 @@ def gaa(
 
         # compute the loss
 
-        verse = 1 if targets is not None else -1
+        verse = -1 if targets is not None else 1
         loc_inputs = inputs[~success]
-        loc_adv_inputs = adv_inputs[~success]
+        loc_adv_inputs = adv_inputs[~success].requires_grad_()
         loc_targets = targets[~success] if targets is not None else labels[~success]
         loc_outputs_victim = outputs_victim[~success]
         cost = sum(
@@ -77,7 +82,7 @@ def gaa(
         ) / len(surrogate_models)
 
         # compute the gradient
-        grad = torch.autograd.grad(cost, loc_adv_inputs)[0]
+        grad = torch.autograd.grad(cost.sum(), loc_adv_inputs)[0]
         loc_momentum = momentum[~success]
         with torch.no_grad():
             if float(p) == Linf:
@@ -107,8 +112,8 @@ def gaa(
                 factor = torch.minimum(torch.tensor(1), eps / _norm)
                 loc_adv_inputs = loc_inputs + (loc_adv_inputs - loc_inputs) * factor
 
-        loc_adv_inputs = torch.clamp(loc_adv_inputs, min=0, max=1)
-        adv_inputs[~success] = loc_adv_inputs
+            loc_adv_inputs = torch.clamp(loc_adv_inputs, min=0, max=1)
+            adv_inputs[~success] = loc_adv_inputs
 
     return adv_inputs
 

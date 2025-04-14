@@ -5,6 +5,7 @@ from .naive_avg import NaiveAvg
 __OPTIONAL__ = {
     "BASES": "transferbench.attacks_zoo.bases.BASES",
     "GAA": "transferbench.attacks_zoo.gaa.GAA",
+    "DSWEA": "transferbench.attacks_zoo.dswea.DSWEA",
 }
 
 
@@ -24,4 +25,4 @@ def __getattr__(name: str):  # noqa: ANN202
     raise AttributeError(msg)
 
 
-__all__ = ["BASES", "GAA", "NaiveAvg"]
+__all__ = ["BASES", "DSWEA", "GAA", "NaiveAvg"]

@@ -1,0 +1,13 @@
+
+gaa:
+  - hp:
+      eps: 0.062745
+      p: "inf"
+      maximum_queries: 10
+    victim_model: "vgg19"
+    surrogate_models : 
+      - 'vgg16'
+      - 'resnet18'
+      - 'squeezenet1_1'
+      - 'googlenet'
+    dataset: "ImageNetT"
