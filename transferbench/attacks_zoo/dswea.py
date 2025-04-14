@@ -14,12 +14,26 @@ from .naive_avg import grad_projection, lp_projection
 
 
 def compute_weights(
-    gradients: list[Tensor] | Tensor,
+    grads_ens: Tensor,
     sigma: float,
 ) -> Tensor:
-    grad_norms = torch.Tensor([grad.norm() for grad in gradients])
+    r"""Compute the weights for the surrogate models based on their gradients."""
+    grad_norms = torch.linalg.vector_norm(grads_ens, dim=(2, 3, 4))
     weights_unnorm = torch.exp(-grad_norms / (sigma**2))
-    return weights_unnorm / torch.sum(weights_unnorm)
+    return weights_unnorm / torch.sum(weights_unnorm, dim=1, keepdim=True)
+
+
+def normalize_weights(weights: Tensor) -> Tensor:
+    r"""Normalize the weights."""
+    return weights.softmax(dim=-1)
+
+
+def initialize_weights(inputs: Tensor, num_surrogates: int) -> Tensor:
+    r"""Initialize the weights for the surrogate models."""
+    weights = [1.0 / num_surrogates] * num_surrogates
+    weights = Tensor(weights).unsqueeze(0).repeat(inputs.shape[0], 1)
+    weights = normalize_weights(weights)
+    return weights.to(inputs.device)
 
 
 def ensemble_gradient(
@@ -58,7 +72,11 @@ def ensemble_gradient(
         xs_ens,
         retain_graph=False,
     )
-    g_ens = sum(w * grad for w, grad in zip(weights, grads_ens, strict=False))
+    g_ens = sum(
+        w.view(-1, 1, 1, 1) * grad
+        for w, grad in zip(weights.T, grads_ens, strict=False)
+    )
+    grads_ens = torch.stack(grads_ens, dim=1)
     return grads_ens, g_ens, loss_ens
 
 
@@ -100,15 +118,12 @@ def dswea(
     # Save original inputs/labels (and targets) for constraint checking and indexing.
     x_orig = inputs.clone()
     labels_orig = labels.clone()
-    targets_orig = targets.clone() if targets is not None else None
+    targets_loss = targets.clone() if targets is not None else labels
 
     num_surrogates = len(surrogate_models)
     loss_fn = hinge_loss
-    grads_ens = [None] * num_surrogates
-    weights = (
-        torch.ones(num_surrogates, device=inputs.device, dtype=torch.float64)
-        / num_surrogates
-    )
+    grads_ens = None
+    weights = initialize_weights(x_orig, num_surrogates)
     ball_projection = partial(lp_projection, eps=eps, p=p)
     dot_projection = partial(grad_projection, p=p)
     # success is per original sample.
@@ -121,17 +136,12 @@ def dswea(
         if q > 0:
             weights = compute_weights(grads_ens, sigma)
 
-        # Instead of shrinking the batch, we identify the unresolved indices.
-        unresolved_mask = ~success
-        if not unresolved_mask.any():
-            break
-
         # External iteration
         for _ in range(T):
             grads_ens, g_ens, loss_ens = ensemble_gradient(
                 loss_fn=loss_fn,
                 x=x_star,
-                targets=targets,
+                targets=targets_loss,
                 surrogate_models=surrogate_models,
                 weights=weights,
             )
@@ -143,30 +153,38 @@ def dswea(
 
             # Internal iteration
             for m in range(M):
-                k = sorted_idx[:, m % num_surrogates]
+                model_per_batch = sorted_idx[:, m % num_surrogates]
 
                 x_bar.requires_grad = True
                 x_bar.grad = None
 
-                pred_x_bar = surrogate_models[k](x_bar)
-                loss_x_bar = loss_fn(pred_x_bar, targets).sum(dim=-1)
+                loss_x_bar = sum(
+                    [
+                        loss_fn(surrogate_models[k](x_bar[[idx]]), targets_loss[[idx]])
+                        for idx, k in enumerate(model_per_batch)
+                    ]
+                )
+
                 grad_x_bar = torch.autograd.grad(loss_x_bar, x_bar)[0]
-                g_bar = weights[k] * (grad_x_bar - grads_ens[k]) + g_ens
+                batched_weights = weights[range(len(model_per_batch)), model_per_batch]
+                grads_ens_loc = grads_ens[range(len(model_per_batch)), model_per_batch]
+                g_bar = (
+                    batched_weights.view(-1, 1, 1, 1) * (grad_x_bar - grads_ens_loc)
+                    + g_ens
+                )
+
                 with torch.no_grad():
                     G_bar = G_bar + g_bar
                     x_bar = x_bar - alpha * dot_projection(G_bar)
                     x_bar = ball_projection(x_orig, x_bar)
                     x_bar = x_bar.clamp(0, 1)
-            x_star = x_bar
+            x_star[~success] = x_bar[~success]
 
         with torch.no_grad():
-            victim_logits = victim_model(x_star, unresolved_mask)
+            victim_logits = victim_model(x_star, ~success)
             victim_pred = victim_logits.argmax(dim=1)
 
-        if targets_orig is None:
-            success = victim_pred != labels_orig
-        else:
-            success = victim_pred == targets_orig
+        success = victim_pred != labels if targets is None else (victim_pred == targets)
 
         if success.all():
             return x_star
