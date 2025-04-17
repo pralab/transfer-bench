@@ -1,7 +1,7 @@
 r"""Define the class for the attack evaluation."""
 
 import logging
-from dataclasses import asdict
+from collections.abc import Generator
 
 import torch
 from tqdm.autonotebook import tqdm
@@ -11,7 +11,8 @@ from transferbench.types import TransferAttack
 from . import attacks_zoo
 from .datasets import DataLoader, get_loader
 from .models import get_model
-from .scenarios import AttackScenario, load_attack_scenario
+from .scenarios import load_attack_scenario
+from .types import AttackResult, AttackScenario, EvaluationResult
 from .wrappers import AttackWrapper
 
 
@@ -48,29 +49,44 @@ class AttackEval:
             f"scenarios={self.scenarios})"
         )
 
-    def run(self, batch_size: int = 128, device: torch.device = "cuda") -> None:
+    def run(
+        self, batch_size: int = 128, device: torch.device = "cuda"
+    ) -> list[EvaluationResult]:
         r"""Run the evaluation."""
         results = []
         for scenario in self.scenarios:
             logging.info("Evaluating scenario", extra={"scenario": scenario})  # noqa: LOG015
-            result = self.evaluate_scenario(scenario, batch_size, device)
+            result = list(self.evaluate_scenario_(scenario, batch_size, device))
             results.append(
-                {
-                    **asdict(scenario.hp),
-                    "transfer_attack": self.transfer_attack,
-                    "dataset": scenario.dataset,
-                    "results": result,
-                }
+                EvaluationResult(
+                    attack=self.transfer_attack,
+                    results=result,
+                )
             )
         return results
 
-    def evaluate_scenario(
+    def evaluate_scenario_(
         self,
         scenario: AttackScenario,
         batch_size: int = 128,
         device: torch.device = "cuda",
-    ) -> None:
-        r"""Evaluate the transferability metric"."""
+    ) -> Generator[AttackResult]:
+        r"""Evaluate a single scenario. For internal use only.
+
+        Parameters
+        ----------
+        scenario : AttackScenario
+            The scenario to evaluate.
+        batch_size : int
+            The batch size to use for the evaluation.
+        device : torch.device
+            The device to use for the evaluation.
+
+        Yields
+        ------
+        AttackResult
+            The result of the attack evaluation.
+        """
         # Get the hyperparameters
         hp = scenario.hp
         # Get the attack step
@@ -117,7 +133,6 @@ class AttackEval:
         success = 0
         queries = 0
         processed_samples = 0
-        results = []
         for inputs, *labels in pbar:
             inputs = inputs.to(device)
             labels = [label.to(device) for label in labels]
@@ -132,15 +147,10 @@ class AttackEval:
                     "ASPQ": success / queries if queries > 0 else 0,
                 }
             )
-            tgt, lbls = (
-                labels if len(labels) > 1 else ((None,) * len(labels[0]), labels[0])
-            )
-            result = {**result, "labels": lbls, "targets": tgt}
             # move to cpu
             result = {
                 key: value.cpu() if isinstance(value, torch.Tensor) else value
                 for key, value in result.items()
             }
-            results.append(result)
+            yield result
         pbar.close()
-        return results

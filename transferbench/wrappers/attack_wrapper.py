@@ -1,25 +1,15 @@
 r"""Module for transfer attacks."""
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 from typing import Optional
 
 import torch
 from torch import Tensor, nn
 
-from transferbench.types import TransferAttack
+from transferbench.types import AttackResult, HyperParameters, TransferAttack
 
 from .model_wrapper import ModelWrapper
 from .utils import lp_constraint
-
-
-# Hyperparameters class, to be inherited by the user for his own attack
-@dataclass(frozen=True)
-class HyperParameters:
-    r"""Hyperparameters for the attack."""
-
-    maximum_queries: int  # Maximum number of queries
-    p: float | str  # Norm of the constraint
-    eps: float  # Epsilon of the constraint
 
 
 class AttackWrapper:
@@ -110,7 +100,7 @@ class AttackWrapper:
 
     def run(
         self, inputs: Tensor, labels: Tensor, targets: Optional[Tensor] = None
-    ) -> dict:
+    ) -> AttackResult:
         r"""Run the attack on the given input."""
         self.reset(inputs)
         adv = self.transfer_attack(
@@ -119,19 +109,23 @@ class AttackWrapper:
             inputs,
             labels,
             targets,
-            **asdict(self.hp),
+            **asdict(self.hp) ** vars(),
         )
         self.check_constraints(adv, inputs)
         self.check_queries()
         queries = self.victim_model.counter.get_queries().clone()
         preds, logits, success = self.evaluate_success(adv, labels, targets)
-        return {
-            "adv": adv,
-            "logits": logits,
-            "predictions": preds,
-            "success": success,
-            "queries": queries,
-        }
+        return AttackResult(
+            {
+                "adv": adv,
+                "logits": logits,
+                "labels": labels,
+                "targets": targets,
+                "predictions": preds,
+                "success": success,
+                "queries": queries,
+            }
+        )
 
     def __repr__(self) -> str:  # noqa: D105
         return (
