@@ -1,3 +1,5 @@
+r"""Utilities for managing and configuring runs for transfer attacks."""
+
 from dataclasses import dataclass
 from hashlib import sha1
 from itertools import product
@@ -16,6 +18,7 @@ class Run:
     attack: str | TransferAttack
     scenario: AttackScenario
     campaign: str
+    id: str = ""
 
     def __post_init__(self) -> None:
         """Post init method to set the id."""
@@ -53,7 +56,7 @@ def get_config_from_run(run: Run) -> dict:
     return wandb_config
 
 
-def make_run_list() -> None:
+def get_run_list() -> list[Run]:
     """Make a list of all the runs."""
     scenario_names = [scn for scn in list_scenarios() if scn in ALLOWED_SCENARIOS]
     run_list = []

@@ -1,89 +1,103 @@
 #!/usr/bin/env python3
+r"""Command line interface for running and displaying results of transfer attacks."""
 
+import logging
 from argparse import ArgumentParser
+from typing import Optional
 
 import wandb
-from benchmark.config import PROJECT_ENTITY, PROJECT_NAME
-from benchmark.utils import Run, get_config_from_run, get_path_from_run, make_run_list
-from benchmark.wandb_reader import WandbReader
+from benchmark.config import DEFAULT_DEVICE
+from benchmark.run_helpers import collect_runs, run_single_scenario
 from pandas import DataFrame
-from wandb.sdk.wandb_run import Run as WandbRun  # noqa: TC002
+
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format=">>> [%(levelname)s] %(asctime)s  \n%(message)s\n<<<",
+)
+logger = logging.getLogger(__name__)
 
 
 def parse_args() -> None:
     r"""Parse command line arguments."""
-    parser = ArgumentParser(description="Command line tool for managing tasks.")
-    subparser = parser.add_subparsers(dest="task", required=True)
-    # Subparsers for getting informations on the runs
-    parser_info = subparser.add_parser("info", help="Display informations on the runs.")
-    parser_info.add_argument(
-        dest="action",
-        choices=["summary", "active", "completed", "missing"],
-        default="summary",
-        type=str,
-        help="Info to display.",
+    parser = ArgumentParser(
+        description="Command line tool for managing benchamrks of the transfer attack."
     )
+    subparser = parser.add_subparsers(dest="command", required=True)
+    # Subparsers for getting informations on the runs
+    parser_info = subparser.add_parser(
+        "display", help="Display informations on the runs."
+    )
+    parser_info.add_argument(
+        dest="status",
+        nargs="?",
+        choices=["all", "running", "finished", "failed", "missing"],
+        default="all",
+        type=str,
+        help="Information to be displyed",
+    )
+    parser_info.add_argument("--query", type=str, help="Query to filter displayed runs")
     # Subparser for running the experiments
     parser_run = subparser.add_parser(
         "run",
         help="Run a job from the list of availables.",
     )
-    parser_run.add_argument("--run-id", type=str, help="ID of the run to be executed.")
-    parser_run.add_argument("--device", type=str, help="Device to be used.")
-    parser_run.add_argument("--batch-size", type=int, help="Batch size to be used.")
+    parser_run.add_argument(
+        dest="run-id", type=str, help="ID of the run to be executed."
+    )
+    parser_run.add_argument("--next", type=str, help="Next available run.")
+    parser_run.add_argument(
+        "--force", action="store_true", help="Force the run to be executed."
+    )
+    parser_run.add_argument(
+        "--device", type=str, default=DEFAULT_DEVICE, help="Device to be used."
+    )
+    parser_run.add_argument(
+        "--batch-size", type=int, default=10, help="Batch size to be used."
+    )
 
     return parser.parse_args()
 
 
-_COLUMNS = ["id", "status", "attack", "victim_model", "dataset", "campaign"]
-
-
-def collect_runs() -> str:
-    r"""Format the runs for display."""
-    # Initialize the WandbReader
-    wandb_connections = WandbReader(PROJECT_ENTITY, PROJECT_NAME)
-    remote_runs: list[WandbRun] = wandb_connections.get_runs()
-    local_runs: list[Run] = make_run_list()
-    df_remote_runs = DataFrame(
-        [
-            {**run.config, "status": run.state, "remote_id": run.id}
-            for run in remote_runs
-        ]
-    )
-    ## get local pandas dataframe
-    df_local_runs = DataFrame([get_config_from_run(run) for run in local_runs])
-    # Merge the two dataframes
-    if df_remote_runs.empty:
-        df_remote_runs = DataFrame([], columns=_COLUMNS + ["remote_id"])
-    df_runs = df_remote_runs.merge(
-        df_local_runs,
-        how="right",
-        on=_COLUMNS,
-        indicator=True,
-    )
-    df_runs.status = df_runs.status.fillna("missing")
-    return (
-        df_runs.loc[:, _COLUMNS]
-        .sort_values(by=["status", "attack", "victim_model", "dataset", "campaign"])
-        .reset_index(drop=True)
-    )
-
-
-def get_info(action: str) -> None:
+def get_filtered_runs(status: str = "all", query: Optional[str] = None) -> DataFrame:
+    r"""Retrieve and filter run information based on the specified criteria."""
     runs = collect_runs()
-    print(runs)
+    if status != "all":
+        runs = runs[runs["status"] == status.capitalize()]
+    if query is not None:
+        runs = runs.query(query)
+    return runs
 
 
-def run(run_id: str, device: str, batch_size: int) -> None:
-    # Initialize the WandbReader
-    wandb_connections = WandbReader(PROJECT_ENTITY, PROJECT_NAME)
+def run_batch(run_ids: list[str], batch_size: int, device: str) -> None:
+    r"""Run a single scenario."""
+    # check if the run_id is missing
+    runs = collect_runs()
+    for run_id in run_ids:
+        run_single_scenario(run_id, batch_size, device)
 
 
 if __name__ == "__main__":
     # Login to Weights & Biases
     wandb.login()
     # Parse the command line arguments
-
-    # make_run_list()
-    get_info("summary")
-    print()
+    args = parse_args()
+    # Get the command line arguments
+    command = args.command
+    if command == "display":
+        # Get the information on the runs
+        runs = get_filtered_runs(
+            status=args.status,
+            query=args.query,
+        )
+        # Display the runs
+        logging.info(runs.to_markdown(index=False))
+    elif command == "run":
+        # Run a single scenario
+        run_id = args.run_id
+        batch_size = args.batch_size
+        device = args.device
+        run_single_scenario(run_id, batch_size, device)
+    else:
+        msg = f"Unknown command {command}"
+        raise ValueError(msg)
