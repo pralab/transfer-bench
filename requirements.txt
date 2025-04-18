@@ -4,7 +4,6 @@ numpy==2.2.4
 pandas==2.2.3
 Pillow==11.2.1
 PyYAML==6.0.2
-PyYAML==6.0.2
 robustbench==1.1
 setuptools==75.8.0
 torch==2.5.1
