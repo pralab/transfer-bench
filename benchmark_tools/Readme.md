@@ -1,16 +1,8 @@
-# Instruction README for Using the `trbench` Script
-
-The `trbench` script is a command-line tool designed for managing and running tasks related to benchmarking. This script is intended for **internal usage only** and requires specific prerequisites to function correctly.
-
-
-
-
-
 # 🧪 Transfer Attack CLI Usage Guide
 
 This CLI tool allows you to **display**, **filter**, and **run** transfer attack benchmark jobs using Weights & Biases logging. All the members of the Weights & Biases team `transfer-team` will have access to the project `transfer-bench` and can run attacks simultaneously since there is a control of conflicts.
 
-🔗 [Go to the project on Weights & Biases](https://wandb.ai/transfer-team/transfer-bench) ![wandb-icon]
+🔗 [Go to the project on Weights & Biases](https://wandb.ai/transfer-team/transfer-bench)
 
 Below are three example use cases, each demonstrated with a short video.
 
@@ -34,8 +26,7 @@ You can use the `display` subcommand to inspect runs. Here are a few common usag
 ```bash
 ./trbench display all --query 'surrogate == "NaiveAvg" and campaign == "omeo"'
 ```
-
-🎥 **Demo Video:** [![Watch Case 1 Demo](../examples/demos/demo display all thumb.png)](../examples/demos/demo display all.mp4)
+![Watch Case 1 Demo](../examples/demos/demo_display_all.gif)
 
 ---
 
@@ -50,7 +41,7 @@ Re-run failed/missing runs that match a previous query.
 
 The script will automatically filter out completed jobs and only re-run those with `status in ["missing", "failed", "crashed"]`.
 
-🎥 **Demo Video:** [![Watch Case 2 Demo](../examples/demos/demo running batch thumb.png)](../examples/demos/demo running batch.mp4)
+![Watch Case 2 Demo](../examples/demos/demo_display_all.gif)
 
 ---
 
@@ -62,8 +53,7 @@ To monitor jobs currently in progress:
 ./trbench display running
 ```
 
-🎥 **Demo Video:** [![Watch Case 3 Demo](../examples/demos/demo display running thumb.png)](../examples/demos/demo display running.mp4)
-
+![Watch Case 3 Demo](../examples/demos/demo_display_running.gif)
 ---
 
 ## 🛠️ Setup
