@@ -38,8 +38,8 @@ def get_model(model_name: str) -> None:
                 return get_robustbench_model(model_name)
         except ImportError as e:
             msg = (
-                "For Optional models, please install the full pachage"
-                " with `pip install transferbench[full]`."
+                "For robust models, please install all the dependencies "
+                " with `pip install transferbench[robust]`."
             )
             raise ImportError(msg) from e
 
