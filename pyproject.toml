@@ -6,7 +6,11 @@ build-backend = "setuptools.build_meta"
 name = "transferbench"
 version = "0.1.0"
 description = "A Python package for benchmarking transferability and transfer-black-box attacks."
-authors = [{ name = "Fabio Brau", email = "fabio.brau@unica.it" }]
+authors = [
+    { name = "Fabio Brau", email = "fabio.brau@unica.it" },
+    { name = "Antonio Cina", email = "antonio.cina@unige.it" },
+    { name = "Maura Pintor", email = "maura.pintor@unica.it" },
+]
 license = "MIT"
 readme = "Readme.md"
 requires-python = ">=3.7"
@@ -23,13 +27,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-full = [
+robust = [
     "transferbench",
     "robustbench >= 1.1",
     "git+https://github.com/fra31/auto-attack",
     "timm==1.0.9",
-    "frozendict",
 ]
 
 [tool.setuptools.packages.find]
-where = ["."] # Auto-find all Python packages
+include = ["transferbench"]
