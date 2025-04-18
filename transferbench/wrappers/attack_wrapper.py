@@ -1,6 +1,5 @@
 r"""Module for transfer attacks."""
 
-from dataclasses import asdict
 from typing import Optional
 
 import torch
@@ -94,9 +93,10 @@ class AttackWrapper:
         r"""Check if the attack was successful."""
         logits = self.victim_model(inputs)
         predictions = logits.argmax(dim=-1)
-        if targets is not None:
-            return predictions, logits, predictions == targets
-        return predictions, logits, predictions != labels
+        success = (
+            (predictions != labels) if targets is None else (predictions == targets)
+        )
+        return predictions, logits, success.int()
 
     def run(
         self, inputs: Tensor, labels: Tensor, targets: Optional[Tensor] = None
@@ -109,7 +109,7 @@ class AttackWrapper:
             inputs,
             labels,
             targets,
-            **asdict(self.hp) ** vars(),
+            **vars(self.hp),
         )
         self.check_constraints(adv, inputs)
         self.check_queries()
