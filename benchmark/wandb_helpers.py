@@ -30,9 +30,8 @@ class WandbReader:
         return [r.state for r in self.get_runs()]
 
     def download_results(self):
-        raise NotImplementedError(
-            "This function is not implemented yet. Please use the wandb API to download the results."
-        )
+        msg = "This function is not implemented yet."
+        raise NotImplementedError(msg)
         for r in self.get_runs():
             results = r.summary.get("results")
             table_path = results.get("path")
@@ -74,19 +73,29 @@ class WandbRun:
             description="Results of the attack",
         )
         artifact.add_file(file_path)
+        artifact.metadata = self.config
+        artifact.save()
+        wandb.log_artifact(artifact)
 
     def __init_table__(self, columns: list[str]) -> None:
         """Initialize the wandb table."""
-        self.table = wandb.Table(columns=columns)
+        self.table = wandb.Table(
+            columns=columns,
+        )
 
     def update_table(self, **data) -> None:
         """Update the wandb table with new data."""
         if self.table is None:
-            self.__init_table__(columns=data.keys())
+            self.__init_table__(columns=list(data.keys()))
         lenght = len(next(iter(data.values())))
         for idx in range(lenght):
             row = [data[key][idx].item() for key in data]
-            self.table.add_column(*row)
+            self.table.add_data(*row)
+        wandb.log({"results": self.table})
+
+    def log(self, **data) -> None:
+        """Log data to wandb."""
+        wandb.log(data)
 
     def __exit__(self, *args) -> None:
         """Close the wandb connection."""

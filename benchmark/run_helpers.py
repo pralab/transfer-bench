@@ -5,7 +5,7 @@ import torch
 from transferbench.attack_evaluation import AttackEval
 from transferbench.types import AttackResult
 
-from .config import COLUMNS, LOCAL_RESULT_ROOT
+from .config import COLUMNS, RESULTS_ROOT
 from .utils import get_config_from_run, get_path_from_run, get_run_list
 from .wandb_helpers import WandbReader, WandbRun
 
@@ -53,30 +53,37 @@ def run_single_scenario(run_id: str, batch_size: int, device: torch.device) -> N
         scenario=run.scenario, batch_size=batch_size, device=device
     )
     config = get_config_from_run(run)
-    path = get_path_from_run(run)
+    path = RESULTS_ROOT / get_path_from_run(run)
     numerical_res_names = list(AttackResult.__required_keys__)
-    _ = numerical_res_names.pop("adv")
-    _ = numerical_res_names.pop("logits")
+    numerical_res_names.remove("adv")
+    numerical_res_names.remove("logits")
     df_results = pd.DataFrame([], columns=numerical_res_names)
     with WandbRun(run_id=run_id, config=config, path=path) as w:
-        for part, res in enumerate(results):
+        for part_id, res in enumerate(results):
             # Save the results to a pth local file
-            data_file_name = LOCAL_RESULT_ROOT / path / f"part{part}.pth"
+            data_file_name = path / f"part{part_id}.pth"
             torch.save(res, data_file_name)
             # Save the results to wandb
             w.upload_data(data_file_name)
             numerical_data = {
-                key: value
-                for key, value in results.items()
-                if key in numerical_res_names
+                key: value for key, value in res.items() if key in numerical_res_names
             }
             # Update wandb table
             w.update_table(**numerical_data)
             # Updata dataframe and save it
             df_loc = pd.DataFrame(numerical_data)
             df_results = pd.concat([df_results, df_loc], ignore_index=True)
+            csv_path = path / "results.csv"
             df_results.to_csv(
-                LOCAL_RESULT_ROOT / path / "results.csv",
+                csv_path,
                 index=False,
             )
+        # Save the results to wandb
+        w.upload_data(csv_path)
+        # Save final results to wandb
+        w.log(
+            asr=df_results["success"].mean(),
+            avg_q=df_results[df_results.success == 1]["queries"].mean(),
+        )
+
     return df_results

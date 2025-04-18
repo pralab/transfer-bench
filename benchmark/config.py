@@ -12,9 +12,9 @@ ALLOWED_SCENARIOS = [
     "debug",
 ]
 
-# DEFAULT_DEVICE: str = "cuda"  # noqa: ERA001
-DEFAULT_DEVICE = "cpu"  # uncomment for testing
-LOCAL_RESULT_ROOT: str = Path("./data")
+DEFAULT_DEVICE: str = "cuda"
+# DEFAULT_DEVICE = "cpu"  # uncomment for testing
+RESULTS_ROOT: str = Path("./data")
 
 COLUMNS = [
     "id",
