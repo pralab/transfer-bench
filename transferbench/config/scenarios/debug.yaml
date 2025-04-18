@@ -4,6 +4,6 @@
       maximum_queries: 2
       p: "inf"
       eps: 0.062745 # 16/255
-    victim_model: "resnet18"
+    victim_model: "vgg13"
     surrogate_models: ["vgg13", "vgg19"]
     dataset: "ImageNetT"
