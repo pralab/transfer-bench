@@ -1,7 +1,6 @@
 r"""Handle results stored in Weights & Biases."""
 
 from pathlib import PosixPath
-from typing import Optional
 
 import wandb
 from wandb.apis.public import Run
