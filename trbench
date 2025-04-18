@@ -6,8 +6,8 @@ from argparse import ArgumentParser
 from typing import Optional
 
 import wandb
-from benchmark.config import DEFAULT_DEVICE
-from benchmark.run_helpers import collect_runs, run_single_scenario
+from benchmark_tools.config import DEFAULT_DEVICE
+from benchmark_tools.run_helpers import collect_runs, run_single_scenario
 from pandas import DataFrame
 
 # Set up logging
