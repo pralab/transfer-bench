@@ -30,7 +30,7 @@ dependencies = [
 robust = [
     "transferbench",
     "robustbench >= 1.1",
-    "autoattack @ git+https://github.com/fra31/auto-attack@main#egg=autoattack",
+    "autoattack @ git+https://github.com/fra31/auto-attack",
     "timm==1.0.9",
 ]
 
