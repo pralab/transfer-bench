@@ -33,7 +33,7 @@ def collect_runs() -> pd.DataFrame:
         on=cols_to_merge,
         indicator=True,
     )
-    df_runs.status = df_runs.status.fillna("Missing")
+    df_runs.status = df_runs.status.fillna("missing")
     return df_runs.loc[:, COLUMNS].sort_values(by="status").reset_index(drop=True)
 
 
@@ -61,7 +61,7 @@ def run_single_scenario(run_id: str, batch_size: int, device: torch.device) -> N
     with WandbRun(run_id=run_id, config=config, path=path) as w:
         for part_id, res in enumerate(results):
             # Save the results to a pth local file
-            data_file_name = path / f"part{part_id}.pth"
+            data_file_name = path / f"full-batch{part_id}.pth"
             torch.save(res, data_file_name)
             # Save the results to wandb
             w.upload_data(data_file_name)
@@ -78,12 +78,9 @@ def run_single_scenario(run_id: str, batch_size: int, device: torch.device) -> N
                 csv_path,
                 index=False,
             )
-        # Save the results to wandb
-        w.upload_data(csv_path)
+            w.log(
+                asr=df_results["success"].mean(),
+                avg_q=df_results[df_results.success == 1]["queries"].mean(),
+            )
         # Save final results to wandb
-        w.log(
-            asr=df_results["success"].mean(),
-            avg_q=df_results[df_results.success == 1]["queries"].mean(),
-        )
-
     return df_results

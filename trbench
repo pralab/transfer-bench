@@ -31,7 +31,7 @@ def parse_args() -> None:
     parser_info.add_argument(
         dest="status",
         nargs="?",
-        choices=["all", "running", "finished", "failed", "missing"],
+        choices=["all", "running", "finished", "crashed", "failed", "missing"],
         default="all",
         type=str,
         help="Information to be displyed",
@@ -43,17 +43,17 @@ def parse_args() -> None:
         help="Run a job from the list of availables.",
     )
     parser_run.add_argument(
-        dest="run-id", type=str, help="ID of the run to be executed."
+        dest="run_id", nargs="?", type=str, help="ID of the run to be executed."
+    )
+    parser_run.add_argument(
+        "--query", type=str, help="Lunch the runs selecting them by query"
     )
     parser_run.add_argument("--next", type=str, help="Next available run.")
-    parser_run.add_argument(
-        "--force", action="store_true", help="Force the run to be executed."
-    )
     parser_run.add_argument(
         "--device", type=str, default=DEFAULT_DEVICE, help="Device to be used."
     )
     parser_run.add_argument(
-        "--batch-size", type=int, default=10, help="Batch size to be used."
+        "--batch-size", type=int, default=100, help="Batch size to be used."
     )
 
     return parser.parse_args()
@@ -63,7 +63,7 @@ def get_filtered_runs(status: str = "all", query: Optional[str] = None) -> DataF
     r"""Retrieve and filter run information based on the specified criteria."""
     runs = collect_runs()
     if status != "all":
-        runs = runs[runs["status"] == status.capitalize()]
+        runs = runs[runs["status"] == status]
     if query is not None:
         runs = runs.query(query)
     return runs
@@ -72,13 +72,17 @@ def get_filtered_runs(status: str = "all", query: Optional[str] = None) -> DataF
 def run_batch(run_ids: list[str], batch_size: int, device: str) -> None:
     r"""Run a single scenario."""
     # check if the run_id is missing
-    runs = collect_runs()
     for run_id in run_ids:
         run_single_scenario(run_id, batch_size, device)
 
 
 if __name__ == "__main__":
-    # Login to Weights & Biases
+    # import sys
+    # sys.argv.append("run")
+    # sys.argv.append("c432f")
+    # sys.argv.append("--device")
+    # sys.argv.append("cpu")
+    # Login to Weights & Biases-
     wandb.login()
     # Parse the command line arguments
     args = parse_args()
@@ -93,11 +97,23 @@ if __name__ == "__main__":
         # Display the runs
         logging.info(runs.to_markdown(index=False))
     elif command == "run":
-        # Run a single scenario
-        run_id = args.run_id
-        batch_size = args.batch_size
-        device = args.device
-        run_single_scenario(run_id, batch_size, device)
+        if args.run_id is not None:
+            run_single_scenario(args.run_id, args.batch_size, args.device)
+        elif args.query is not None:
+            df_runs = get_filtered_runs("missing", query=args.query)
+            while not df_runs.empty:
+                run_single_scenario(df_runs.iloc[0].id, args.batch_size, args.device)
+                df_runs = get_filtered_runs("missing", query=args.query)
+        elif args.next is not None:
+            # Get the next available run
+            df_runs = get_filtered_runs("missing")
+            if df_runs.empty:
+                msg = "No runs available."
+                raise ValueError(msg)
+            # Get the next available run
+            run_id = df_runs.iloc[0].id
+            run_single_scenario(run_id, args.batch_size, args.device)
+
     else:
         msg = f"Unknown command {command}"
         raise ValueError(msg)

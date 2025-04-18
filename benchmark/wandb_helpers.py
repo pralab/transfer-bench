@@ -1,6 +1,7 @@
 r"""Handle results stored in Weights & Biases."""
 
 from pathlib import PosixPath
+from typing import Optional
 
 import wandb
 from wandb.apis.public import Run
@@ -68,12 +69,12 @@ class WandbRun:
     def upload_data(self, file_path: PosixPath) -> None:
         """Save data to wandb as an artifact."""
         artifact = wandb.Artifact(
-            name=file_path.stem,
-            type="results",
+            name=self.run_id + "-" + file_path.stem,
+            type="full-results",
             description="Results of the attack",
+            metadata=self.config,
         )
         artifact.add_file(file_path)
-        artifact.metadata = self.config
         artifact.save()
         wandb.log_artifact(artifact)
 
@@ -82,6 +83,7 @@ class WandbRun:
         self.table = wandb.Table(
             columns=columns,
         )
+        self.table.metadata = self.config
 
     def update_table(self, **data) -> None:
         """Update the wandb table with new data."""
@@ -91,7 +93,7 @@ class WandbRun:
         for idx in range(lenght):
             row = [data[key][idx].item() for key in data]
             self.table.add_data(*row)
-        wandb.log({"results": self.table})
+        wandb.log({"numerical-results": self.table})
 
     def log(self, **data) -> None:
         """Log data to wandb."""
