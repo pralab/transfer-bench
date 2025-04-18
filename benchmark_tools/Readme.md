@@ -41,7 +41,7 @@ Re-run failed/missing runs that match a previous query.
 
 The script will automatically filter out completed jobs and only re-run those with `status in ["missing", "failed", "crashed"]`.
 
-![Watch Case 2 Demo](../examples/demos/demo_display_all.gif)
+![Watch Case 2 Demo](../examples/demos/demo_running_batch.gif)
 
 ---
 
