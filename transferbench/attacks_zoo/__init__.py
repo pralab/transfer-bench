@@ -1,11 +1,14 @@
 r"""Attacks zoo."""
 
+from .bases import BASES
+from .dswea import DSWEA
+from .gaa import GAA
 from .naive_avg import NaiveAvg
 
 __OPTIONAL__ = {
-    "BASES": "transferbench.attacks_zoo.bases.BASES",
-    "GAA": "transferbench.attacks_zoo.gaa.GAA",
-    "DSWEA": "transferbench.attacks_zoo.dswea.DSWEA",
+    # "BASES": "transferbench.attacks_zoo.bases.BASES",  # noqa: ERA001
+    # "GAA": "transferbench.attacks_zoo.gaa.GAA",  # noqa: ERA001
+    # "DSWEA": "transferbench.attacks_zoo.dswea.DSWEA",  # noqa: ERA001
 }
 
 
