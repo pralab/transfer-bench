@@ -100,8 +100,8 @@ def naive_avg(
 class NaiveAvgHyperParams:
     r"""Hyperparameters for the naive average attack."""
 
-    inner_iterations: int = 50
-    alpha: float = 0.01
+    inner_iterations: int = 100
+    alpha: float = 3 * 16 / 255 / 10
 
 
 ## Wrap the attack to be used in the evaluators
