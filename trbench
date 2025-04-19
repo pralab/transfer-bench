@@ -55,6 +55,12 @@ def parse_args() -> None:
     parser_run.add_argument(
         "--batch-size", type=int, default=100, help="Batch size to be used."
     )
+    parser_run.add_argument(
+        "--ignore-finished",
+        action="store_true",
+        default=False,
+        help="Ignore finished runs and run the job anyway.",
+    )
 
     return parser.parse_args()
 
@@ -100,7 +106,12 @@ if __name__ == "__main__":
         if args.run_id is not None:
             run_single_scenario(args.run_id, args.batch_size, args.device)
         elif args.query is not None:
-            safe_query = args.query + ' and status in ["missing", "failed", "crashed"]'
+            safe_query = args.query
+            if not args.ignore_finished:
+                safe_query = (
+                    safe_query + ' and status in ["missing", "failed", "crashed"]'
+                )
+
             df_runs = get_filtered_runs(query=safe_query)
             while not df_runs.empty:
                 logger.info(
