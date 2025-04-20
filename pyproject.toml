@@ -28,15 +28,16 @@ dependencies = [
 
 [project.optional-dependencies]
 robust = [
-    "transferbench",
     "robustbench >= 1.1",
     "autoattack @ git+https://github.com/fra31/auto-attack",
     "timm==1.0.9",
 ]
-cli = ["wandb >= 0.10.0"]
+tools = ["wandb >= 0.10.0",
+         "pandas >= 2.2.0",
+	 "tabulate"]
 
 [tool.setuptools.packages.find]
 include = ["transferbench"]
 
 [project.scripts]
-trbench = "benchmark_tool.main_bnch_tool:main"
+trbench = "transferbench.benchmark_tools.main_bnch_tool:main"

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 r"""Command line interface for running and displaying results of transfer attacks."""
 
-from benchmark_tools.main_bnch_tool import main
+from transferbench.benchmark_tools.main_bnch_tool import main
 
 if __name__ == "__main__":
     main()
