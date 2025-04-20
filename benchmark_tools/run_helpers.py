@@ -1,7 +1,10 @@
 r"""Module for providing functionality to collect and format runs."""
 
+from typing import Optional
+
 import pandas as pd
 import torch
+from pandas import DataFrame
 from transferbench.attack_evaluation import AttackEval
 from transferbench.types import AttackResult
 
@@ -88,3 +91,13 @@ def run_single_scenario(run_id: str, batch_size: int, device: torch.device) -> N
             )
         # Save final results to wandb
     return df_results
+
+
+def get_filtered_runs(status: str = "all", query: Optional[str] = None) -> DataFrame:
+    r"""Retrieve and filter run information based on the specified criteria."""
+    runs = collect_runs()
+    if status != "all":
+        runs = runs[runs["status"] == status]
+    if query is not None:
+        runs = runs.query(query)
+    return runs

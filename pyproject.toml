@@ -33,6 +33,10 @@ robust = [
     "autoattack @ git+https://github.com/fra31/auto-attack",
     "timm==1.0.9",
 ]
+cli = ["wandb >= 0.10.0"]
 
 [tool.setuptools.packages.find]
 include = ["transferbench"]
+
+[project.scripts]
+trbench = "benchmark_tool.main_bnch_tool:main"
