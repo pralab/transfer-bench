@@ -83,7 +83,10 @@ def run_batch(run_ids: list[str], batch_size: int, device: str) -> None:
 
 
 if __name__ == "__main__":
-    # import sys
+    import sys
+
+    # sys.argv.append("display")
+    # sys.argv.append("all")
     # sys.argv.append("run")
     # sys.argv.append("c432f")
     # sys.argv.append("--device")
@@ -106,20 +109,29 @@ if __name__ == "__main__":
         if args.run_id is not None:
             run_single_scenario(args.run_id, args.batch_size, args.device)
         elif args.query is not None:
-            safe_query = args.query
+            safe_query = args.query + " and available == True"
             if not args.ignore_finished:
-                safe_query = (
-                    safe_query + ' and status in ["missing", "failed", "crashed"]'
-                )
-
+                safe_query += ' and status in ["missing", "failed", "crashed"]'
             df_runs = get_filtered_runs(query=safe_query)
-            while not df_runs.empty:
-                logger.info(
-                    f"Processing the following runs: \n {df_runs.to_markdown(index=False)}"
-                )
-                run_single_scenario(df_runs.iloc[0].id, args.batch_size, args.device)
-                df_runs = get_filtered_runs(query=safe_query)
+            logger.info(
+                f"Processing runs: \n {df_runs.to_markdown(index=False)}"  # noqa: G004
+            )
+            for run_id in df_runs.id:
+                try:
+                    run_single_scenario(run_id, args.batch_size, args.device)
+                except (  # noqa: PERF203
+                    ValueError,
+                    RuntimeError,
+                ) as e:  # Replace with specific exceptions
+                    logger.exception(f"Error while processing run {run_id}\n {e}")  # noqa: G004
+                    # Ask the user if they want to continue
+                    if input("Do you want to continue? (y/n)").lower() not in ["", "y"]:
+                        break
+
         elif args.next is not None:
+            logger.warning(
+                "The --next option is deprecated and will be removed in the future."
+            )
             # Get the next available run
             df_runs = get_filtered_runs("missing")
             if df_runs.empty:
@@ -128,7 +140,3 @@ if __name__ == "__main__":
             # Get the next available run
             run_id = df_runs.iloc[0].id
             run_single_scenario(run_id, args.batch_size, args.device)
-
-    else:
-        msg = f"Unknown command {command}"
-        raise ValueError(msg)

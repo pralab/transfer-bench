@@ -26,12 +26,16 @@ def collect_runs() -> pd.DataFrame:
         df_remote_runs = pd.DataFrame(columns=COLUMNS)
         # df_remote_runs = df_local_runs.copy().iloc[:10, :]  # noqa: ERA001
         # df_remote_runs["status"] = "Finished"  # noqa: ERA001
-    cols_to_merge = [col for col in COLUMNS if col != "status"]
+    cols_to_merge = [col for col in COLUMNS if col not in {"status", "available"}]
     df_runs = df_local_runs.merge(
         df_remote_runs,
         how="outer",
         on=cols_to_merge,
         indicator=True,
+    )
+    df_runs = df_runs.rename(columns={"_merge": "available"})
+    df_runs.available = df_runs.available.replace(
+        {"left_only": True, "right_only": False, "both": True}
     )
     df_runs.status = df_runs.status.fillna("missing")
     return df_runs.loc[:, COLUMNS].sort_values(by="status").reset_index(drop=True)

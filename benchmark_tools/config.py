@@ -26,4 +26,5 @@ COLUMNS = [
     "eps",
     "maximum_queries",
     "dataset",
+    "available",
 ]
