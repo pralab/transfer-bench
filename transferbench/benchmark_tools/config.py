@@ -13,7 +13,6 @@ ALLOWED_SCENARIOS = [
 ]
 
 DEFAULT_DEVICE: str = "cuda"
-# DEFAULT_DEVICE = "cpu"  # uncomment for testing
 RESULTS_ROOT: str = Path("./data")
 
 COLUMNS = [

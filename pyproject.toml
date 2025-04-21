@@ -5,10 +5,10 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "transferbench"
 version = "0.1.0"
-description = "A Python package for benchmarking transferability and transfer-black-box attacks."
+description = "A Python package for benchmarking transfer-black-box attacks."
 authors = [
     { name = "Fabio Brau", email = "fabio.brau@unica.it" },
-    { name = "Antonio Cina", email = "antonio.cina@unige.it" },
+    { name = "Antonio Cinà", email = "antonio.cina@unige.it" },
     { name = "Maura Pintor", email = "maura.pintor@unica.it" },
 ]
 license = "MIT"
@@ -23,7 +23,10 @@ dependencies = [
     "torchvision>=0.8.0",
     "kagglehub >= 0.3.0",
     "tqdm >= 4.62.0",
-    "appdirs >= 1.4.0",
+    "appdirs >= 1.4.0", 
+    "wandb >= 0.10.0", 
+    "pandas >= 2.2.0", 
+    "tabulate>= 0.9.0"
 ]
 
 [project.optional-dependencies]
@@ -32,9 +35,6 @@ robust = [
     "autoattack @ git+https://github.com/fra31/auto-attack",
     "timm==1.0.9",
 ]
-tools = ["wandb >= 0.10.0",
-         "pandas >= 2.2.0",
-	 "tabulate"]
 
 [tool.setuptools.packages.find]
 include = ["transferbench"]
