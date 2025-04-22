@@ -121,3 +121,15 @@ class EvaluationResult(TypedDict):
 
     attack: str | TransferAttack
     results: list[AttackResult]
+
+
+@dataclass
+class Config:
+    r"""Configuration for the transferbench tool."""
+
+    project_name: str
+    project_entity: str
+    allowed_scenarios: list[str]
+    default_device: str
+    results_root: str
+    columns: list[str]
