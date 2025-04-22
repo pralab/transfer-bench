@@ -88,14 +88,14 @@ def run_batch(run_ids: list[str], batch_size: int, device: str) -> None:
             run_single_scenario(run_id, batch_size, device)
         except KeyboardInterrupt:  # noqa: PERF203
             logger.info("Keyboard interrupt detected. Exiting...")
-            break
+            sys.exit(1)
         except Exception as e:
             msg = f"Error while processing run {run_id}\n {e}"
             logger.exception(msg)
             # Ask the user if they want to continue
             msg = "Do you want to continue with next runs? (y/n)"
             if input(msg).lower() not in ["", "y"]:
-                break
+                sys.exit(1)
 
 
 def handle_display(
@@ -122,7 +122,7 @@ def handle_runs(
         if "finished" in df_runs["status"]:
             logger.warning(
                 (
-                    "The query contains finished run(s), that will be ignored.",
+                    "The query contains finished run(s). They will be ignored.",
                     "Input them as run_ids arguments if you want to re-run them.",
                 )
             )
@@ -154,18 +154,24 @@ def handle_config(
 
 def main() -> None:
     r"""Entrypoint to run the script."""
-    # Login to Weights & Biases-
-    wandb.login()
     # Parse the command line arguments
     args = parse_args()
     # Get the command line arguments
     command = args.command
+    if command == "config":
+        handle_config(
+            results_root=args.results_root,
+            project_name=args.project_name,
+            project_entity=args.project_entity,
+        )
+        sys.exit()
+    # Login to Weights & Biases-
+    wandb.login()
     if command == "display":
         handle_display(
             status=args.status,
             query=args.query,
         )
-        sys.exit()
     elif command == "run":
         handle_runs(
             run_ids=args.run_ids,
@@ -173,14 +179,4 @@ def main() -> None:
             batch_size=args.batch_size,
             device=args.device,
         )
-        sys.exit()
-    elif command == "config":
-        handle_config(
-            results_root=args.results_root,
-            project_name=args.project_name,
-            project_entity=args.project_entity,
-        )
-    else:
-        msg = f"Unknown command: {command}"
-        logger.error(msg)
-        sys.exit(1)
+
