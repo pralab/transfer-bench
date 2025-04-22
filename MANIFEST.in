@@ -1,0 +1,2 @@
+include transferbench/config/scenarios/*.yaml
+include transferbench/config/tools/*.yaml

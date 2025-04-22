@@ -39,7 +39,8 @@ robust = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["transferbench"]
+where = ["."]
+include = ["transferbench*", "config"]
 
 [project.scripts]
 trbench = "transferbench.benchmark_tools.main_bnch_tool:main"
