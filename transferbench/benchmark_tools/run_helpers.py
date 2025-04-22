@@ -1,14 +1,16 @@
 r"""Module for providing functionality to collect and format runs."""
 
+from pathlib import Path
 from typing import Optional
 
 import pandas as pd
 import torch
 from pandas import DataFrame
+
 from transferbench.attack_evaluation import AttackEval
 from transferbench.types import AttackResult
 
-from .config import COLUMNS, RESULTS_ROOT
+from .config import cfg
 from .utils import get_config_from_run, get_path_from_run, get_run_list
 from .wandb_helpers import WandbReader, WandbRun
 
@@ -26,10 +28,10 @@ def collect_runs() -> pd.DataFrame:
     df_local_runs = pd.DataFrame([get_config_from_run(run) for run in local_runs])
     # Merge the two dataframes
     if df_remote_runs.empty:
-        df_remote_runs = pd.DataFrame(columns=COLUMNS)
+        df_remote_runs = pd.DataFrame(columns=cfg.columns)
         # df_remote_runs = df_local_runs.copy().iloc[:10, :]  # noqa: ERA001
         # df_remote_runs["status"] = "Finished"  # noqa: ERA001
-    cols_to_merge = [col for col in COLUMNS if col not in {"status", "available"}]
+    cols_to_merge = [col for col in cfg.columns if col not in {"status", "available"}]
     df_runs = df_local_runs.merge(
         df_remote_runs,
         how="outer",
@@ -41,7 +43,7 @@ def collect_runs() -> pd.DataFrame:
         {"left_only": True, "right_only": False, "both": True}
     )
     df_runs.status = df_runs.status.fillna("missing")
-    return df_runs.loc[:, COLUMNS].sort_values(by="status").reset_index(drop=True)
+    return df_runs.loc[:, cfg.columns].sort_values(by="status").reset_index(drop=True)
 
 
 def run_single_scenario(run_id: str, batch_size: int, device: torch.device) -> None:
@@ -60,7 +62,7 @@ def run_single_scenario(run_id: str, batch_size: int, device: torch.device) -> N
         scenario=run.scenario, batch_size=batch_size, device=device
     )
     config = get_config_from_run(run)
-    path = RESULTS_ROOT / get_path_from_run(run)
+    path = Path(cfg.results_root) / get_path_from_run(run)
     numerical_res_names = list(AttackResult.__required_keys__)
     numerical_res_names.remove("adv")
     numerical_res_names.remove("logits")

@@ -2,28 +2,17 @@ r"""Configuration for the weight and biases api."""
 
 from pathlib import Path
 
-PROJECT_NAME = "transfer-bench"
-PROJECT_ENTITY = "transfer-team"
+from omegaconf import OmegaConf
 
-ALLOWED_SCENARIOS = [
-    "omeo-imagenet-inf",
-    "etero-imagenet-inf",
-    "robust-imagenet-inf",
-    "debug",
-]
+from transferbench.types import Config
+from transferbench.utils.cache import get_cache_dir
 
-DEFAULT_DEVICE: str = "cuda"
-RESULTS_ROOT: str = Path("./data")
+DEFAULT_CFG_PATH = Path(__file__).parent.parent / "config" / "tools" / "defaults.yaml"
+user_cfg_path = get_cache_dir() / "config" / "user_config.yaml"
 
-COLUMNS = [
-    "id",
-    "status",
-    "attack",
-    "victim_model",
-    "campaign",
-    "p",
-    "eps",
-    "maximum_queries",
-    "dataset",
-    "available",
-]
+defaults_cfg = OmegaConf.load(DEFAULT_CFG_PATH)
+user_cfg = (
+    OmegaConf.load(user_cfg_path) if user_cfg_path.exists() else OmegaConf.create()
+)
+
+cfg: Config = OmegaConf.merge(defaults_cfg, user_cfg)

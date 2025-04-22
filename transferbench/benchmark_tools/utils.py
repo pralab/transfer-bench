@@ -8,7 +8,7 @@ from transferbench.attacks_zoo import __all__ as attacks_list
 from transferbench.scenarios import AttackScenario, list_scenarios, load_attack_scenario
 from transferbench.types import TransferAttack
 
-from .config import ALLOWED_SCENARIOS
+from .config import cfg
 
 
 @dataclass
@@ -58,7 +58,7 @@ def get_config_from_run(run: Run) -> dict:
 
 def get_run_list() -> list[Run]:
     """Make a list of all the runs."""
-    scenario_names = [scn for scn in list_scenarios() if scn in ALLOWED_SCENARIOS]
+    scenario_names = [scn for scn in list_scenarios() if scn in cfg.allowed_scenarios]
     run_list = []
     for scn_name, attack in product(scenario_names, attacks_list):
         scns = load_attack_scenario(scn_name)

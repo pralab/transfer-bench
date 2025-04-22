@@ -1,0 +1,26 @@
+# Default configuration for the transfer-bench tool
+# This file is part of the TransferBench project.
+
+project_name: "transfer-bench"
+project_entity: "transfer-team"
+
+allowed_scenarios:
+  - "omeo-imagenet-inf"
+  - "etero-imagenet-inf"
+  - "robust-imagenet-inf"
+  - "debug"
+
+default_device: "cuda"
+results_root: "./data"
+
+columns:
+  - "id"
+  - "status"
+  - "attack"
+  - "victim_model"
+  - "campaign"
+  - "p"
+  - "eps"
+  - "maximum_queries"
+  - "dataset"
+  - "available"

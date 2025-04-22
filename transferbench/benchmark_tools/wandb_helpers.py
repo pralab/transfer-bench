@@ -5,14 +5,14 @@ from pathlib import PosixPath
 import wandb
 from wandb.apis.public import Run
 
-from .config import PROJECT_ENTITY, PROJECT_NAME
+from .config import cfg
 
 
 class WandbReader:
     """Reader for Weigths & Biases data."""
 
     def __init__(
-        self, entity: str = PROJECT_ENTITY, project_name: str = PROJECT_NAME
+        self, entity: str = cfg.project_entity, project_name: str = cfg.project_name
     ) -> None:
         """Create WnadbReader."""
         self.entity = entity
@@ -56,8 +56,8 @@ class WandbRun:
     def __enter__(self) -> "WandbRun":
         """Open the wandb connection."""
         wandb.init(
-            project=PROJECT_NAME,
-            entity=PROJECT_ENTITY,
+            project=cfg.project_name,
+            entity=cfg.project_entity,
             id=self.run_id,
             resume="allow",
             config=self.config,

@@ -1,13 +1,13 @@
-#!/usr/bin/env python3
 r"""Command line interface for running and displaying results of transfer attacks."""
 
 import logging
+import sys
 from argparse import ArgumentParser
 from typing import Optional
 
 import wandb
 
-from .config import DEFAULT_DEVICE
+from .config import OmegaConf, cfg, user_cfg, user_cfg_path
 from .run_helpers import get_filtered_runs, run_single_scenario
 
 # Set up logging
@@ -52,11 +52,32 @@ def parse_args() -> None:
     )
     parser_run.add_argument("--next", type=str, help="Next available run.")
     parser_run.add_argument(
-        "--device", type=str, default=DEFAULT_DEVICE, help="Device to be used."
+        "--device", type=str, default=cfg.default_device, help="Device to be used."
     )
     parser_run.add_argument(
         "--batch-size", type=int, default=20, help="Batch size to be used."
     )
+    ## config command, allow user to set configurations
+    parser_config = subparser.add_parser(
+        "config",
+        help="Set the configuration for banchmark tool.",
+    )
+    parser_config.add_argument(
+        "--results-root",
+        type=str,
+        help="Set root directory for the results.",
+    )
+    parser_config.add_argument(
+        "--project-name",
+        type=str,
+        help="Set project name.",
+    )
+    parser_config.add_argument(
+        "--project-entity",
+        type=str,
+        help="Set project entity.",
+    )
+
     return parser.parse_args()
 
 
@@ -114,6 +135,23 @@ def handle_runs(
     run_batch(run_ids, batch_size, device)
 
 
+def handle_config(
+    **kwargs: Optional[str],
+) -> None:
+    r"""Handle the config subcommand."""
+    # Crete the config file if it does not exist
+    cli_cfg = OmegaConf.create(
+        {key: value for key, value in kwargs.items() if value is not None}
+    )
+    # Merge the user config with the default config
+    cli_cfg = OmegaConf.merge(user_cfg, cli_cfg)
+    if not user_cfg_path.exists():
+        user_cfg_path.parent.mkdir(parents=True, exist_ok=True)
+    OmegaConf.save(cli_cfg, user_cfg_path)
+    info_msg = f"Configutation updated: {cli_cfg}"
+    logger.info(info_msg)
+
+
 def main() -> None:
     r"""Entrypoint to run the script."""
     # Login to Weights & Biases-
@@ -127,6 +165,7 @@ def main() -> None:
             status=args.status,
             query=args.query,
         )
+        sys.exit()
     elif command == "run":
         handle_runs(
             run_ids=args.run_ids,
@@ -134,6 +173,14 @@ def main() -> None:
             batch_size=args.batch_size,
             device=args.device,
         )
+        sys.exit()
+    elif command == "config":
+        handle_config(
+            results_root=args.results_root,
+            project_name=args.project_name,
+            project_entity=args.project_entity,
+        )
     else:
         msg = f"Unknown command: {command}"
         logger.error(msg)
+        sys.exit(1)
