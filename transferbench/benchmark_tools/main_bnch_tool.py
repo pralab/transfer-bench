@@ -6,6 +6,7 @@ from argparse import ArgumentParser
 from typing import Optional
 
 import wandb
+from pandas import DataFrame
 
 from .config import OmegaConf, cfg, user_cfg, user_cfg_path
 from .run_helpers import get_filtered_runs, run_single_scenario
@@ -126,12 +127,16 @@ def handle_runs(
                     "Input them as run_ids arguments if you want to re-run them.",
                 )
             )
-        safe_query += ' and status in ["missing", "failed", "crashed"]'
-        safe_query += " or id in @run_ids"
+        safe_query += ' and (status in ["missing", "failed", "crashed"])'
+        safe_query += " or (id in @run_ids and status != 'running')"
         df_runs = df_runs.query(safe_query)
-        log_msg = f"Processing runs: \n {df_runs.to_markdown(index=False)}"
-        logger.info(log_msg)
-        run_ids += df_runs["id"].tolist()
+
+    else:
+        safe_query = "available == True and id in @run_ids and status != 'running')"
+        df_runs = get_filtered_runs(query=safe_query)
+    log_msg = f"Processing runs: \n {df_runs.to_markdown(index=False)}"
+    logger.info(log_msg)
+    run_ids = df_runs["id"].tolist()
     run_batch(run_ids, batch_size, device)
 
 
@@ -179,4 +184,3 @@ def main() -> None:
             batch_size=args.batch_size,
             device=args.device,
         )
-
