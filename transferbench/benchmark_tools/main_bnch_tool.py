@@ -121,18 +121,18 @@ def handle_runs(
         df_runs = get_filtered_runs(query=safe_query)
         ## Check if finished runs are included and warning the user
         if "finished" in df_runs["status"]:
-            logger.warning(
+            logger.info(
                 (
                     "The query contains finished run(s). They will be ignored.",
                     "Input them as run_ids arguments if you want to re-run them.",
                 )
             )
         safe_query += ' and (status in ["missing", "failed", "crashed"])'
-        safe_query += " or (id in @run_ids and status != 'running')"
+        safe_query += f' or (id in {run_ids} and status != "running")'
         df_runs = df_runs.query(safe_query)
 
     else:
-        safe_query = "available == True and id in @run_ids and status != 'running')"
+        safe_query = f'available == True and id in {run_ids} and status != "running")'
         df_runs = get_filtered_runs(query=safe_query)
     log_msg = f"Processing runs: \n {df_runs.to_markdown(index=False)}"
     logger.info(log_msg)
