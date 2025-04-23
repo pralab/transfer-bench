@@ -1,85 +1,95 @@
 # TransferBench 🚀
 
-TransferBench is a Python package designed to evaluate black-box transfer attacks using one or more surrogate models. It provides tools for testing the effectiveness of attacks in various scenarios that involve different victim models, surrogate models, and datasets. Optional robust victim models can also be included.
+TransferBench is a Python package designed for evaluating black-box transfer attacks using one or more surrogate models. It provides a flexible and streamlined interface for testing attack effectiveness across a variety of scenarios involving different victim models, surrogate models, and datasets. Optional robust victim models are also supported.
 
 ## Features ✅
 
-- Evaluate black-box attacks on predefined scenarios with minimal effort.
-- Highly customizable evaluation through user-defined scenarios.
-- Standard scenarios require a minimal set of dependencies, while additional scenarios can be accessed by installing the full package.
+- Effortless evaluation of black-box attacks on predefined scenarios.
+- Fully customizable via user-defined evaluation scenarios.
+- Lightweight core dependencies; extended scenarios available via optional extras.
 
 ## Installation ⚙️
 
-For the standard installation, run:
+To install the standard version:
 
 ```bash
-pip install -e git+ssh://git@github.com/fabiobrau/transfer-bench.git
+pip install git+ssh://git@github.com/fabiobrau/transfer-bench.git
 ```
 
-For extended experiments, such as robust scenarios (which require additional dependencies), install the full version:
+To enable robust evaluation scenarios (with additional dependencies):
 
 ```bash
-pip install -e git+ssh://git@github.com/fabiobrau/transfer-bench.git#egg=transfer-bench[full]
+pip install git+ssh://git@github.com/fabiobrau/transfer-bench.git#egg=transfer-bench[robust]
 ```
 
-## Usage 📌
+## Quickstart 📌
 
-Here is a basic example of how to evaluate attack methods using the default settings:
+Here's a minimal example to evaluate an attack using the default settings:
 
 ```python
-from transferbench.attack_evaluation import AttackEval
+from transferbench import AttackEval
 from transferbench.attacks_zoo import NaiveAvg
 
 evaluator = AttackEval(NaiveAvg)
-# Display default scenarios
-print(evaluator.scenarios)
-# Run the evaluation
-result = evaluator.run(batch_size=4, device="cuda:1")
+print(evaluator.scenarios)  # Display default scenarios
+result = evaluator.run(batch_size=4, device="cuda:1")  # Run evaluation
 print(result)
 ```
 
-## Proposed Scenarios for Attack Evaluations 🎯
+For more advanced examples and customization options, see the [tutorial notebook](examples/example-attack-evaluation.ipynb).
 
-### **hetero-imagenet-inf** (Default Scenario)
+## Evaluation Scenarios 🎯
 
-In this scenario, the attack is evaluated on the following cases:
+Attack evaluations are grouped into **campaigns**, each defining a different set of victim-surrogate model configurations:
+
+- `etero`: heterogeneous surrogates
+- `omeo`: homogeneous surrogates
+- `robust`: robust victim models (optional)
+
+### Default Scenario: `etero-imagenet-inf`
 
 ```yaml
 hetero-imagenet-inf:
-  - hp: 
+  - hp:
       maximum_queries: 50
       p: "inf"
-      eps: 0.062745 # 16/255
+      eps: 0.062745  # 16/255
     victim_model: "vgg19"
     surrogate_models: ["resnet50", "resnext50_32x4d", "densenet121", "swin_b", "swin_t", "vit_b_32"]  # CNNPool
-    dataset: "ImageNetT" 
-
-  - hp: 
-      maximum_queries: 50
-      p: "inf"
-      eps: 0.062745 # 16/255
-    victim_model: "resnext101_32x8d"
-    surrogate_models: ["inceptionv3", "convnext_base", "vgg16",  "swin_b", "swin_t", "vit_b_32"]  # ResPool
     dataset: "ImageNetT"
 
-  - hp: 
+  - hp:
       maximum_queries: 50
       p: "inf"
-      eps: 0.062745 # 16/255
+      eps: 0.062745
+    victim_model: "resnext101_32x8d"
+    surrogate_models: ["inception_v3", "convnext_base", "vgg16",  "swin_b", "swin_t", "vit_b_32"]  # ResPool
+    dataset: "ImageNetT"
+
+  - hp:
+      maximum_queries: 50
+      p: "inf"
+      eps: 0.062745
     victim_model: "vit_b_16"
-    surrogate_models: ["inceptionv3", "convnext_base", "vgg16", "resnet50", "resnext50_32x4d", "densenet121"]  # ViTPool
+    surrogate_models: ["inception_v3", "convnext_base", "vgg16", "resnet50", "resnext50_32x4d", "densenet121"]  # ViTPool
     dataset: "ImageNetT"
 ```
 
-Additional included scenarios:
-- **homo-imagenet-inf**
-- **robust-imagenet-inf** (optional, requires additional dependencies)
+Other included scenarios:
+- `omeo-imagenet-inf`
+- `robust-imagenet-inf` *(optional, requires `[robust]` installation)*
+
+## Command-Line Interface: `trbench`
+
+For full pipeline control, use the `trbench` CLI script. It helps manage experiment runs, tracks progress, and saves results automatically.
+
+See the [`trbench` guide](transferbench/benchmark_tools/Readme.md) for more details.
 
 ## Contributing 🤝
 
-We welcome contributions! For detailed guidelines on contributing to the `attacks_zoo`, please refer to the [Contribution Guide for attacks_zoo](transferbench/attacks_zoo/README.md).
+We welcome contributions! To contribute to the `attacks_zoo` or other components, please read our [contribution guide](transferbench/attacks_zoo/README.md).
 
 ## License 📜
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+TransferBench is released under the MIT License. See the [LICENSE](LICENSE) file for full details.
 

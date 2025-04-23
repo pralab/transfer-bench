@@ -6,7 +6,6 @@ from argparse import ArgumentParser
 from typing import Optional
 
 import wandb
-from pandas import DataFrame
 
 from .config import OmegaConf, cfg, user_cfg, user_cfg_path
 from .run_helpers import get_filtered_runs, run_single_scenario
