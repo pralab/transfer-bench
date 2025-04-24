@@ -1,6 +1,7 @@
 r"""Handle results stored in Weights & Biases."""
 
 from pathlib import PosixPath
+from types import TracebackType
 
 import wandb
 from wandb.apis.public import Run
@@ -98,6 +99,15 @@ class WandbRun:
         """Log data to wandb."""
         wandb.log(data)
 
-    def __exit__(self, *args) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
         """Close the wandb connection."""
-        wandb.finish()
+        exit_code = 0 if exc_type is None else 1
+        if exc_type is not None:
+            wandb.log({"error": str(exc_value)})
+            wandb.log({"traceback": str(traceback)})
+        wandb.finish(exit_code=exit_code)

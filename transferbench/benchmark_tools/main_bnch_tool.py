@@ -92,7 +92,6 @@ def run_batch(run_ids: list[str], batch_size: int, device: str) -> None:
         except Exception as e:
             msg = f"Error while processing run {run_id}\n {e}"
             logger.exception(msg)
-            # Ask the user if they want to continue
             msg = "Do you want to continue with next runs? (y/n)"
             if input(msg).lower() not in ["", "y"]:
                 sys.exit(1)
