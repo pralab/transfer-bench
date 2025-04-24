@@ -59,7 +59,9 @@ def get_model_weights(model_name: str) -> dict:
         error_msg = f"Model {model_name} does not exist."
         raise ValueError(error_msg)
     model_path = str(models_paths_dict[model_name])
-    raw_weights = torch.load(model_path, map_location="cpu")["state_dict"]
+    raw_weights = torch.load(model_path, map_location="cpu", weights_only=False)[
+        "state_dict"
+    ]
     return {
         k.replace("module.", "").replace("_wrapped_model.", ""): v
         for k, v in raw_weights.items()
