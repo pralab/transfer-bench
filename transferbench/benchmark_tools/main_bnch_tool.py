@@ -92,6 +92,11 @@ def parse_args() -> None:
 def run_batch(run_ids: list[str], batch_size: int, device: str) -> None:
     r"""Run a single scenario."""
     for run_id in run_ids:
+        # Check if the run is already running
+        if run_id in get_filtered_runs(status="running")["id"].tolist():
+            msg = f"Run {run_id} is already running. Skipping..."
+            logger.info(msg)
+            continue
         try:
             run_single_scenario(run_id, batch_size, device)
         except KeyboardInterrupt:  # noqa: PERF203
