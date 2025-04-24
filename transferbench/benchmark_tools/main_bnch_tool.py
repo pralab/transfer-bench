@@ -130,7 +130,7 @@ def handle_runs(
         df_runs = df_runs.query(safe_query)
 
     else:
-        safe_query = f'available == True and id in {run_ids} and status != "running")'
+        safe_query = f'available == True and id in {run_ids} and status != "running"'
         df_runs = get_filtered_runs(query=safe_query)
     log_msg = f"Processing runs: \n {df_runs.to_markdown(index=False)}"
     logger.info(log_msg)
