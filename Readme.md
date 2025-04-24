@@ -19,7 +19,7 @@ pip install git+ssh://git@github.com/fabiobrau/transfer-bench.git
 To enable robust evaluation scenarios (with additional dependencies):
 
 ```bash
-pip install git+ssh://git@github.com/fabiobrau/transfer-bench.git#egg=transfer-bench[robust]
+pip install git+ssh://git@github.com/fabiobrau/transfer-bench.git#egg=transferbench[robust]
 ```
 
 ## Quickstart 📌
