@@ -112,7 +112,7 @@ class WandbRun:
                 {
                     "error/type": exc_type.__name__,
                     "error/value": str(exc_value),
-                    "error/traceback": traceback.format_exc() if traceback else None,
+                    "error/traceback": str(traceback),
                 }
             )
 
