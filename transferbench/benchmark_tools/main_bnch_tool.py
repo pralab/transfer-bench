@@ -31,7 +31,7 @@ def parse_args() -> None:
     parser_info.add_argument(
         dest="status",
         nargs="?",
-        choices=["all", "running", "finished", "crashed", "failed", "missing"],
+        choices=["all", "running", "finished", "crashed", "killed", "missing"],
         default="all",
         type=str,
         help="Information to be displyed",
