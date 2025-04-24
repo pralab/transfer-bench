@@ -31,7 +31,15 @@ def parse_args() -> None:
     parser_info.add_argument(
         dest="status",
         nargs="?",
-        choices=["all", "running", "finished", "crashed", "killed", "missing"],
+        choices=[
+            "all",
+            "running",
+            "finished",
+            "crashed",
+            "killed",
+            "failed",
+            "missing",
+        ],
         default="all",
         type=str,
         help="Information to be displyed",
@@ -125,7 +133,7 @@ def handle_runs(
                     "Input them as run_ids arguments if you want to re-run them.",
                 )
             )
-        safe_query += ' and (status in ["missing", "failed", "crashed"])'
+        safe_query += ' and (status not in ["finished", "running"])'
         safe_query += f' or (id in {run_ids} and status != "running")'
         df_runs = df_runs.query(safe_query)
 
