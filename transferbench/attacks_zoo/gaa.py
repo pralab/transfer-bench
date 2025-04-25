@@ -28,7 +28,7 @@ class GradientAlignedLoss(nn.Module):  # noqa: D101
             torch.nn.functional.one_hot(labels, outputs.shape[-1]).float()
         ).bool()
         prob_victim_[target_onehot_bool] = prob_victim_[target_onehot_bool] - 1.0
-        w = prob_victim_ / torch.log(torch.tensor([2.0]))
+        w = prob_victim_ / torch.log(torch.tensor([2.0], device=outputs.device))
         return (w * outputs).sum(1)
 
 
