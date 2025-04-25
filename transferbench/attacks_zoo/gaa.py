@@ -4,11 +4,11 @@ from dataclasses import asdict, dataclass
 from functools import partial
 from typing import Optional
 
+import numpy as np
 import torch
 from torch import Tensor, nn
 
 from transferbench.types import CallableModel, TransferAttack
-import numpy as np
 
 L2 = float("2")
 Linf = float("inf")
