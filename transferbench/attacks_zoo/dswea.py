@@ -148,13 +148,13 @@ def dswea(
             for m in range(M):
                 model_per_batch = sorted_idx[:, m % num_surrogates]
 
-                x_bar.requires_grad = True
-                x_bar.grad = None
+                x_bar.requires_grad_()
 
                 loss_x_bar = sum(
                     [
                         loss_fn(surrogate_models[k](x_bar[[idx]]), targets_loss[[idx]])
                         for idx, k in enumerate(model_per_batch)
+                        if not success[idx]
                     ]
                 )
 
