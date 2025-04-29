@@ -33,7 +33,4 @@ class ImageNormalizer(nn.Module):
 
 def add_normalization(model: Module, mean: tuple[float], std: tuple[float]) -> Module:
     r"""Add a normalization layer to the model."""
-    model_name = model.__class__.__name__
-    model = nn.Sequential(ImageNormalizer(mean, std), model)
-    model.__class__.__name__ = model_name
-    return model
+    return nn.Sequential(ImageNormalizer(mean, std), model)
