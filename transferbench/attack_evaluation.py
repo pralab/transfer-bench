@@ -97,13 +97,9 @@ class AttackEval:
         )
         # Get the dataloader
         data_loader = (
-            get_loader(
-                scenario.dataset, batch_size=batch_size, device=device, shuffle=False
-            )
+            get_loader(scenario.dataset, batch_size=batch_size, device=device)
             if isinstance(scenario.dataset, str)
-            else DataLoader(
-                scenario.dataset, batch_size=batch_size, device=device, shuffle=False
-            )
+            else DataLoader(scenario.dataset, batch_size=batch_size, device=device)
         )
         # Import model if string is given
         if isinstance(scenario.victim_model, str):
