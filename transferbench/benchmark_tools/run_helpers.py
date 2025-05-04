@@ -64,8 +64,7 @@ def init_numerical_results(run: WandbRun, resume: bool) -> tuple[DataFrame, int]
     numerical_res_names.remove("logits")
     df_results = pd.DataFrame([], columns=numerical_res_names)
     wandb_path = f"{run.entity}/{run.project_name}/"
-    # art_type = "full-results"
-    art_type = "results"
+    art_type = "full-results"
 
     while resume:
         artifact_name = wandb_path + f"{run.run_id}-full-batch{part_id}:latest"
