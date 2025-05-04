@@ -6,9 +6,10 @@ from typing import Optional
 import pandas as pd
 import torch
 from pandas import DataFrame
+from wandb.errors import CommError
 
 from transferbench.attack_evaluation import AttackEval
-from transferbench.types import AttackResult
+from transferbench.types import AttackResult, AttackScenario
 
 from .config import cfg
 from .utils import get_config_from_run, get_path_from_run, get_run_list
@@ -46,8 +47,73 @@ def collect_runs() -> pd.DataFrame:
     return df_runs.loc[:, cfg.columns].sort_values(by="status").reset_index(drop=True)
 
 
-def run_single_scenario(run_id: str, batch_size: int, device: torch.device) -> None:
-    r"""Run a single scenario."""
+def init_numerical_results(run: WandbRun, resume: bool) -> tuple[DataFrame, int]:
+    r"""Load partial results from a run.
+
+    Args:
+        run (WandbRun): The run to load the results from.
+        resume (bool): Whether to resume prevous data or not.
+
+    Returns:
+        tuple: A tuple containing the results and the last part id.
+    """
+    # Load the results
+    part_id = 0
+    numerical_res_names = list(AttackResult.__required_keys__)
+    numerical_res_names.remove("adv")
+    numerical_res_names.remove("logits")
+    df_results = pd.DataFrame([], columns=numerical_res_names)
+    wandb_path = f"{run.entity}/{run.project_name}/"
+    # art_type = "full-results"
+    art_type = "results"
+
+    while resume:
+        artifact_name = wandb_path + f"{run.run_id}-full-batch{part_id}:latest"
+        try:
+            data = run.get_data(artifact_name, art_type=art_type)
+        except CommError:
+            break
+        numerical_data = {
+            key: value for key, value in data.items() if key in numerical_res_names
+        }
+        # Updata dataframe and save it
+        df_loc = pd.DataFrame(numerical_data)
+        df_results = pd.concat([df_results, df_loc], ignore_index=True)
+        # continue cycle if not error
+        part_id += 1
+    return df_results, part_id
+
+
+def init_dataset(scenario: AttackScenario, start_from: int = 0) -> None:
+    r"""Initialize the dataset for the scenario.
+
+    Args:
+        scenario (AttackScenario): The scenario to initialize.
+        start_from (int): The starting index for the dataset. Defaults to 0.
+    """
+    # Initialize the dataset
+    from torch.utils.data import Subset
+
+    from transferbench.datasets import datasets
+
+    dataset = scenario.dataset
+    dataset = getattr(datasets, dataset)() if isinstance(dataset, str) else dataset()
+    if start_from > 0:
+        dataset = Subset(dataset, range(start_from, len(dataset)))
+    scenario.dataset = dataset
+
+
+def run_single_scenario(
+    run_id: str, batch_size: int, device: torch.device, resume: bool = True
+) -> None:
+    r"""Run a single scenario.
+
+    Args:
+        run_id (str): The id of the run to evaluate.
+        batch_size (int): The batch size to use for the evaluation.
+        device (torch.device): The device to use for the evaluation.
+        resume (bool): Whether to resume the run or not. Defaults to True.
+    """
     # Get the run list
     run_list = get_run_list()
     # Get the run
@@ -57,31 +123,33 @@ def run_single_scenario(run_id: str, batch_size: int, device: torch.device) -> N
         raise ValueError(msg)
     # Get the path to the run
     evaluator = AttackEval(transfer_attack=run.attack)
-    # Run the evaluation
-    results = evaluator.evaluate_scenario_(
-        scenario=run.scenario, batch_size=batch_size, device=device
-    )
     config = get_config_from_run(run)
     path = Path(cfg.results_root) / get_path_from_run(run)
-    numerical_res_names = list(AttackResult.__required_keys__)
-    numerical_res_names.remove("adv")
-    numerical_res_names.remove("logits")
-    df_results = pd.DataFrame([], columns=numerical_res_names)
+
     with WandbRun(run_id=run_id, config=config, path=path) as w:
-        for part_id, res in enumerate(results):
+        df_results, start_part_id = init_numerical_results(w, resume)
+        # reduce dataset to the remaining parts
+        init_dataset(run.scenario, start_from=len(df_results))
+        # Initialize the evaluation
+        results = evaluator.evaluate_scenario_(
+            scenario=run.scenario,
+            batch_size=batch_size,
+            device=device,
+        )
+        for part_id, res in enumerate(results, start=start_part_id):
             # Save the results to a pth local file
             data_file_name = path / f"full-batch{part_id}.pth"
             torch.save(res, data_file_name)
             # Save the results to wandb
             w.upload_data(data_file_name)
             numerical_data = {
-                key: value for key, value in res.items() if key in numerical_res_names
+                key: value for key, value in res.items() if key in df_results.columns
             }
-            # Update wandb table
-            w.update_table(**numerical_data)
             # Updata dataframe and save it
             df_loc = pd.DataFrame(numerical_data)
             df_results = pd.concat([df_results, df_loc], ignore_index=True)
+            # Update wandb table
+            w.upload_table(df_results)
             csv_path = path / "results.csv"
             df_results.to_csv(
                 csv_path,
@@ -92,6 +160,7 @@ def run_single_scenario(run_id: str, batch_size: int, device: torch.device) -> N
                 avg_q=df_results[df_results.success == 1]["queries"].mean(),
             )
         # Save final results to wandb
+        w.upload_table(df_results)
     return df_results
 
 

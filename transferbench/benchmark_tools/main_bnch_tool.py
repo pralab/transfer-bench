@@ -59,7 +59,11 @@ def parse_args() -> None:
         type=str,
         help="Lunch the runs selecting them by query. Example of usage.",
     )
-    parser_run.add_argument("--next", type=str, help="Next available run.")
+    parser_run.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Overwrite the run, do not resume the previous results.",
+    )
     parser_run.add_argument(
         "--device", type=str, default=cfg.default_device, help="Device to be used."
     )
@@ -96,7 +100,7 @@ def parse_args() -> None:
     return parser.parse_args()
 
 
-def run_batch(run_ids: list[str], batch_size: int, device: str) -> None:
+def run_batch(run_ids: list[str], batch_size: int, device: str, resume: bool) -> None:
     r"""Run a single scenario."""
     for run_id in run_ids:
         # Check if the run is already running
@@ -105,7 +109,7 @@ def run_batch(run_ids: list[str], batch_size: int, device: str) -> None:
             logger.info(msg)
             continue
         try:
-            run_single_scenario(run_id, batch_size, device)
+            run_single_scenario(run_id, batch_size, device, resume)
         except KeyboardInterrupt:  # noqa: PERF203
             logger.info("Keyboard interrupt detected. Exiting...")
             sys.exit(1)
@@ -129,7 +133,11 @@ def handle_display(
 
 
 def handle_runs(
-    run_ids: Optional[list[str]], query: Optional[str], batch_size: int, device: str
+    run_ids: Optional[list[str]],
+    query: Optional[str],
+    batch_size: int,
+    device: str,
+    resume: bool,
 ) -> None:
     r"""Handle the run subcommand."""
     run_ids = run_ids if run_ids is not None else []
@@ -155,7 +163,7 @@ def handle_runs(
     log_msg = f"Processing runs: \n {df_runs.to_markdown(index=False)}"
     logger.info(log_msg)
     run_ids = df_runs["id"].tolist()
-    run_batch(run_ids, batch_size, device)
+    run_batch(run_ids, batch_size, device, resume)
 
 
 def handle_config(
@@ -209,6 +217,7 @@ def main() -> None:
             query=args.query,
             batch_size=args.batch_size,
             device=args.device,
+            resume=not args.overwrite,
         )
     elif command == "report":
         handle_report(args.download)
