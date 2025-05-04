@@ -9,7 +9,6 @@ from .config import cfg
 from .run_helpers import get_filtered_runs
 from .wandb_helpers import WandbReader
 
-
 MODEL_NAMES = {
     "resnext101_32x8d": "\\resnext{101}",
     "vgg19": "\\vgg{19}",
@@ -50,7 +49,7 @@ def collect_results(download: bool) -> list[dict]:
             # open the json file
             table = run_dir / "numerical-results.table.json"
             # load the json file
-            with open(table, "r") as f:
+            with Path.open(table, "r") as f:
                 # read the json file
                 table = f.read()
                 json_data = json.loads(table)
@@ -61,7 +60,6 @@ def collect_results(download: bool) -> list[dict]:
                 columns=columns,
             )
             df_run["id"] = run_id
-            # print(f"Loaded {len(df_run)} rows from {run_id}")
             results.append(df_run)
     df_results = pd.concat(results, ignore_index=True)
     # merge with configurations
@@ -115,12 +113,12 @@ def make_tabulars(df_results: pd.DataFrame) -> list[pd.DataFrame]:
             new_metric = COLUMN_NAMES.get(metric, metric)
             new_scenario = SCENARIO_NAMES.get(scenario, scenario)
             new_model = MODEL_NAMES.get(model, model)
-            new_columns.append((new_scenario, new_model, new_metric))
+            new_columns.append((new_model, new_scenario, new_metric))
 
         pivot_df.columns = pd.MultiIndex.from_tuples(new_columns)
 
         # Rearrange the columns to match the order: scenario, model, {ASR, \bar q}
-        def metric_key(row):
+        def metric_key(row: tuple) -> int:
             return 0 if row[2] == "ASR" else 1
 
         pivot_df = pivot_df[
@@ -137,8 +135,9 @@ def make_tabulars(df_results: pd.DataFrame) -> list[pd.DataFrame]:
             Path(cfg.report_root) / f"tabular_{dataset}.tex",
             caption=f"Results for {dataset}",
             label=f"tab:{dataset}",
-            float_format="%.2f",
+            float_format="%.1f",
             column_format="l" + "|cc" * (len(pivot_df.columns) // 2) + "|",
+            multicolumn_format="c",
             na_rep="-",
             escape=False,  # Important: allows LaTeX commands to be rendered properly
         )

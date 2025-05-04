@@ -110,7 +110,7 @@ def run_batch(run_ids: list[str], batch_size: int, device: str, resume: bool) ->
             continue
         try:
             run_single_scenario(run_id, batch_size, device, resume)
-        except KeyboardInterrupt:  # noqa: PERF203
+        except KeyboardInterrupt:
             logger.info("Keyboard interrupt detected. Exiting...")
             sys.exit(1)
         except Exception as e:
