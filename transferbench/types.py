@@ -132,4 +132,5 @@ class Config:
     allowed_scenarios: list[str]
     default_device: str
     results_root: str
+    reports_root: str
     columns: list[str]

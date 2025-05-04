@@ -31,13 +31,17 @@ class WandbReader:
     def get_runs_states(self):
         return [r.state for r in self.get_runs()]
 
-    def download_results(self):
-        msg = "This function is not implemented yet."
-        raise NotImplementedError(msg)
+    def download_results(self, root: PosixPath) -> None:
+        """Download the results from Weights & Biases."""
         for r in self.get_runs():
-            results = r.summary.get("results")
-            table_path = results.get("path")
-            r.file(table_path).download(f"results/{r.id}")
+            table_name = self.connection_url + f"/run-{r.id}-numerical-results:latest"
+            try:
+                table = self.api.artifact(table_name)
+                table.download(root / "tables" / r.id)
+            except Exception as e:
+                _ = f"Error while downloading {table_name}.\n {e}"
+            finally:
+                pass
 
 
 class WandbRun:

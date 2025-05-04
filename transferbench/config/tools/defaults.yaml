@@ -12,6 +12,7 @@ allowed_scenarios:
 
 default_device: "cuda"
 results_root: "./data"
+report_root: "./report"
 
 columns:
   - "id"

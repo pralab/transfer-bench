@@ -8,6 +8,7 @@ from typing import Optional
 import wandb
 
 from .config import OmegaConf, cfg, user_cfg, user_cfg_path
+from .report_helpers import collect_results, make_tabulars
 from .run_helpers import get_filtered_runs, run_single_scenario
 
 # Set up logging
@@ -84,6 +85,12 @@ def parse_args() -> None:
         "--project-entity",
         type=str,
         help="Set project entity.",
+    )
+    parser_report = subparser.add_parser("report", help="Generate a report.")
+    parser_report.add_argument(
+        "--download",
+        action="store_true",
+        help="Download the results from Weights & Biases.",
     )
 
     return parser.parse_args()
@@ -168,6 +175,14 @@ def handle_config(
     logger.info(info_msg)
 
 
+def handle_report(download: bool = False) -> None:
+    r"""Handle the report subcommand."""
+    # collect finished runs
+    df_results = collect_results(download=download)
+    make_tabulars(df_results)[0]
+    logger.info("Report generated.")
+
+
 def main() -> None:
     r"""Entrypoint to run the script."""
     # Parse the command line arguments
@@ -195,3 +210,5 @@ def main() -> None:
             batch_size=args.batch_size,
             device=args.device,
         )
+    elif command == "report":
+        handle_report(args.download)
