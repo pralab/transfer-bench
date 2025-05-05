@@ -6,9 +6,14 @@ from .gaa import GAA
 from .naive_avg import NaiveAvg
 
 __OPTIONAL__ = {
-    # "BASES": "transferbench.attacks_zoo.bases.BASES",  # noqa: ERA001
-    # "GAA": "transferbench.attacks_zoo.gaa.GAA",  # noqa: ERA001
-    # "DSWEA": "transferbench.attacks_zoo.dswea.DSWEA",  # noqa: ERA001
+    "AdaEA": "transferbench.attacks_zoo.oneshot_attacks.AdaEA",
+    "CWA": "transferbench.attacks_zoo.oneshot_attacks.CWA",
+    "ENS": "transferbench.attacks_zoo.oneshot_attacks.ENS",
+    "LGV": "transferbench.attacks_zoo.oneshot_attacks.LGV",
+    "MBA": "transferbench.attacks_zoo.oneshot_attacks.MBA",
+    "SASD_WS": "transferbench.attacks_zoo.oneshot_attacks.SASD_WS",
+    "SMER": "transferbench.attacks_zoo.oneshot_attacks.SMER",
+    "SVRE": "transferbench.attacks_zoo.oneshot_attacks.SVRE",
 }
 
 
