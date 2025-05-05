@@ -9,6 +9,7 @@ from torchvision.transforms import InterpolationMode as Interp
 from transferbench.utils.cache import get_cache_dir
 
 from .cifar10_target import CIFAR10T as CIFAR10T_
+from .cifar10_target import CIFAR100T as CIFAR100T_
 from .imagenet_target import ImageNetT as ImageNetT_
 
 DATASET_CACHE_DIR = get_cache_dir() / "datasets"
@@ -23,18 +24,15 @@ class BaseDataset(Dataset):
     root: str
 
 
-class CIFAR10T(CIFAR10T_):
+class CIFARTntarget(BaseDataset):
     r"""Dataset from `https://www.cs.toronto.edu/~kriz/cifar.html` with targets."""
 
     mean = (0.49139968, 0.48215841, 0.44653091)
     std = (0.2023, 0.1994, 0.2010)
-    root = DATASET_CACHE_DIR / "CIFAR10"
 
     def __init__(
         self,
-        train: bool = False,
         center: bool = False,
-        augment: bool = True,
         size: Optional[int] = None,
         target_file: Optional[str] = None,
     ) -> None:
@@ -43,9 +41,6 @@ class CIFAR10T(CIFAR10T_):
         if center:
             transf_list.append(tsfm.Normalize(self.mean, self.std))
 
-        if train and augment:
-            transf_list.append(tsfm.RandomCrop(32, 4))
-            transf_list.append(tsfm.RandomHorizontalFlip())
         if size is not None:
             transf_list.append(tsfm.Resize(size, Interp.NEAREST, antialias=None))
 
@@ -54,11 +49,22 @@ class CIFAR10T(CIFAR10T_):
         transform = tsfm.Compose(transf_list)
         super().__init__(
             root=self.root,
-            target_file=target_file,
-            train=train,
+            train=False,
             transform=transform,
             download=True,
         )
+
+
+class CIFAR10T(CIFARTntarget, CIFAR10T_):
+    r"""Targeted CIFAR10 dataset."""
+
+    root = DATASET_CACHE_DIR / "CIFAR10"
+
+
+class CIFAR100T(CIFARTntarget, CIFAR100T_):
+    r"""Targeted CIFAR100 dataset."""
+
+    root = DATASET_CACHE_DIR / "CIFAR100"
 
 
 class ImageNetT(ImageNetT_):
