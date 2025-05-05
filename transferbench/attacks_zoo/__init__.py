@@ -33,4 +33,17 @@ def __getattr__(name: str):  # noqa: ANN202
     raise AttributeError(msg)
 
 
-__all__ = ["BASES", "DSWEA", "GAA", "NaiveAvg"]
+__all__ = [
+    "BASES",
+    "CWA",
+    "DSWEA",
+    "ENS",
+    "GAA",
+    "LGV",
+    "MBA",
+    "SASD_WS",
+    "SMER",
+    "SVRE",
+    "AdaEA",
+    "NaiveAvg",
+]
