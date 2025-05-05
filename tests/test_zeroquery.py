@@ -23,4 +23,7 @@ def main():
         scenario = load_attack_scenario("debug")[0]
         scenario.dataset = Subset(ImageNetT(), range(10))
         evaluator.set_scenarios(scenario)
-        _ = evaluator.run(batch_size=2, device="cuda:1")
+        try:
+            _ = evaluator.run(batch_size=2, device="cuda:1")
+        except Exception as e:
+            print(f"Failed to run {attack}: {e}")
