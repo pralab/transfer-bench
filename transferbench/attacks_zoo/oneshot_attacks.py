@@ -3,6 +3,7 @@ r"""TransferAttack wrapper for the TransferBench framework."""
 from functools import partial
 from typing import Optional
 
+import torch
 from torch import Tensor, nn
 
 from transferbench.attacks_zoo.TransferAttack import transferattack
@@ -41,8 +42,9 @@ def transfer_attack(
     if attack_kwargs is None:
         attack_kwargs = {}
     # Common arguments
-    norm = "linfity" if float(p) == float("inf") else f"l{p}"
+    norm = "linfty" if float(p) == float("inf") else f"l{p}"
     targeted = targets is not None
+
     # Initialize the attack
     attacker = TransferAttackWrapper(
         model_name=surrogate_models,
@@ -52,7 +54,7 @@ def transfer_attack(
         norm=norm,
         **attack_kwargs,
     )
-    labels = [labels, targets]
+    labels = torch.stack([labels, targets]) if targeted else labels
     perturbations = attacker(inputs, labels).detach()
     return inputs + perturbations
 
