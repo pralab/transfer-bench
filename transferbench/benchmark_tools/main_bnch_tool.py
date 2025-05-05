@@ -8,7 +8,7 @@ from typing import Optional
 import wandb
 
 from .config import OmegaConf, cfg, user_cfg, user_cfg_path
-from .report_helpers import collect_results, make_tabulars
+from .report_helpers import collect_results, make_tabulars, make_plots
 from .run_helpers import get_filtered_runs, run_single_scenario
 
 # Set up logging
@@ -189,6 +189,8 @@ def handle_report(download: bool = False) -> None:
     df_results = collect_results(download=download)
     make_tabulars(df_results)[0]
     logger.info("Report generated.")
+    make_plots(df_results)
+    logger.info("Plots generated.")
 
 
 def main() -> None:

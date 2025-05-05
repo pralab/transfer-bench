@@ -3,7 +3,9 @@ r"""Report helpers for transferbench."""
 import json
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import pandas as pd
+import seaborn as sns
 
 from .config import cfg
 from .run_helpers import get_filtered_runs
@@ -85,6 +87,8 @@ def make_tabulars(df_results: pd.DataFrame) -> list[pd.DataFrame]:
     for dataset in datasets:
         df_loc = df_results[df_results["dataset"] == dataset]
         df_loc = df_loc[df_loc["campaign"].isin(SCENARIO_NAMES.keys())]
+        # Replace queries with nan when success is 0
+        df_loc.loc[df_loc["success"] == 0, "queries"] = float("nan")
 
         agg_df = (
             df_loc.groupby(["attack", "campaign", "victim_model"])
@@ -144,3 +148,54 @@ def make_tabulars(df_results: pd.DataFrame) -> list[pd.DataFrame]:
 
         tabulars.append(pivot_df)
     return tabulars
+
+
+def make_plots(df_results: pd.DataFrame) -> None:
+    r"""Make side-by-side plots (one per scenario) from the results.
+
+    Args:
+        df_results (pd.DataFrame): DataFrame with the results.
+    """
+    for dataset in df_results["dataset"].unique():
+        df_loc = df_results[df_results["dataset"] == dataset]
+        scenarios = [s for s in df_loc["campaign"].unique() if s in SCENARIO_NAMES]
+
+        # Set up subplots
+        fig, axes = plt.subplots(
+            1, len(scenarios), figsize=(4 * len(scenarios), 3), sharey=True
+        )
+
+        if len(scenarios) == 1:
+            axes = [axes]  # Ensure axes is iterable if only one plot
+
+        for ax, scenario in zip(axes, scenarios, strict=True):
+            df_scenario = df_loc[df_loc["campaign"] == scenario].copy()
+            df_scenario.loc[df_scenario["success"] == 0, "queries"] = float("nan")
+            # Replace the success with the cumulative success
+            df_scenario = df_scenario.sort_values("queries")
+            df_scenario["success"] = df_scenario.groupby(["attack", "victim_model"])[
+                "success"
+            ].transform(lambda x: x.cumsum() / x.count())
+            df_scenario = df_scenario.sort_values("attack")
+            sns.lineplot(
+                data=df_scenario,
+                x="queries",
+                y="success",
+                hue="attack",
+                markers=True,
+                dashes=False,
+                ax=ax,
+                estimator=None,
+                units="victim_model",
+            )
+            scenario_name = scenario.capitalize() + "Pool"
+            ax.set_title(scenario_name)
+            ax.set_xlabel("Queries")
+            ax.set_ylabel("Success Rate")
+            ax.legend(loc="best")
+
+        plt.tight_layout()
+        plot_path = Path(cfg.report_root) / f"plot_{dataset}.png"
+        plot_path.parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(plot_path)
+        plt.clf()
