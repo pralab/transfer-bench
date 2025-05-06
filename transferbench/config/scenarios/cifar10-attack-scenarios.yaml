@@ -1,6 +1,6 @@
 
 ## Scenarios for cifar10 attacks
-etero-imagenet-inf:
+etero-cifar10-inf:
   - hp: 
       maximum_queries: 50
       p: "inf"
