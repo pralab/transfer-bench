@@ -16,8 +16,10 @@ from .imagenet_models import (
 
 OPTIONAL_MODELS = [
     "imagenet_resnet50_pubdef",
+    "cifar10_wideresnet34-10_pubdef",
     "Xu2024MIMIR_Swin-L",
     "Amini2024MeanSparse_Swin-L",
+    "Amini2024MeanSparse_S-WRN-94-16",
 ]
 
 
