@@ -14,7 +14,7 @@ MODELS_DIR = get_cache_dir() / "models" / "pubdef"
 MODEL_KAGGLE_LINK = "csitawarin/pubdef-defending-against-transfer-attacks"
 
 ALLOWED_MODELS = [
-    "cifar10_wideresnet34-10_pubdef",
+    # "cifar10_wideresnet34-10_pubdef",
     # "cifar100_wideresnet34-10_pubdef",
     "imagenet_resnet50_pubdef",
 ]
