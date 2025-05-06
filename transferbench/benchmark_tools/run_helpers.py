@@ -58,7 +58,7 @@ def init_numerical_results(run: WandbRun, resume: bool) -> tuple[DataFrame, int]
         run (WandbRun): The run to load the results from.
         resume (bool): Whether to resume prevous data or not.
 
-    Returns:
+    Return
         tuple: A tuple containing the results and the last part id.
     """
     # Load the results
