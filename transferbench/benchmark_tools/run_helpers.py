@@ -27,6 +27,10 @@ def collect_runs() -> pd.DataFrame:
     )
     ## get local pandas dataframe
     df_local_runs = pd.DataFrame([get_config_from_run(run) for run in local_runs])
+    # Check if duplicates id are present
+    if df_local_runs["id"].duplicated().any():
+        msg = "Duplicate run ids found. 1 chance every 1.04e6 Now you peel the onion."
+        raise ValueError(msg)
     # Merge the two dataframes
     if df_remote_runs.empty:
         df_remote_runs = pd.DataFrame(columns=cfg.columns)
