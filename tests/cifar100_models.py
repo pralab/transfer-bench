@@ -9,9 +9,9 @@ from transferbench.models import get_model, list_models
 
 @torch.no_grad()
 def acc(model: str, batch_size: int = 200) -> float:
-    """Get the accuracy of the model on CIFAR10."""
+    """Get the accuracy of the model on CIFAR100."""
     model.eval().to("cpu")
-    loader = get_loader("CIFAR10T", batch_size=batch_size, device="cpu")
+    loader = get_loader("CIFAR100T", batch_size=batch_size, device="cpu")
     acc = 0.0
     for inputs, labels, _ in loader:
         outputs = model(inputs)
@@ -20,15 +20,11 @@ def acc(model: str, batch_size: int = 200) -> float:
 
 
 def check_models():
-    available_models = [model for model in list_models() if "cifar10_" in model]
+    available_models = [model for model in list_models() if "cifar100_" in model]
     for model_name in available_models:
         print(f"Loading model: {model_name}: ...", end="\r")
-        try:
-            model = get_model(model_name)
-            print(f"Loading model: {model_name}: Done. Accuracy: {acc(model)}")
-        except Exception as e:
-            print(f"Loading model: {model_name}: Failed. Error: {e}")
-            continue
+        model = get_model(model_name)
+        print(f"Loading model: {model_name}: Done. Accuracy: {acc(model)}")
 
     print("All models loaded successfully.")
 
