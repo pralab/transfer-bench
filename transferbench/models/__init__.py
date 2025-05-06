@@ -1,6 +1,12 @@
 r"""Load model and offer utils for transfer/attack evaluations."""
 
 from . import utils
+from .cifar_models import (
+    get_model as get_cifar_model,
+)
+from .cifar_models import (
+    list_models as list_cifar_models,
+)
 from .imagenet_models import (
     get_model as get_imagenet_model,
 )
@@ -10,8 +16,10 @@ from .imagenet_models import (
 
 OPTIONAL_MODELS = [
     "imagenet_resnet50_pubdef",
+    "cifar10_wideresnet34-10_pubdef",
     "Xu2024MIMIR_Swin-L",
     "Amini2024MeanSparse_Swin-L",
+    "Amini2024MeanSparse_S-WRN-94-16",
 ]
 
 
@@ -42,13 +50,14 @@ def get_model(model_name: str) -> None:
                 " with `pip install transferbench[robust]`."
             )
             raise ImportError(msg) from e
-
+    if "cifar" in model_name:
+        return get_cifar_model(model_name)
     return get_imagenet_model(model_name)
 
 
 def list_models() -> list[str]:
     r"""List all available models."""
-    return list_imagenet_models() + OPTIONAL_MODELS
+    return list_imagenet_models() + list_cifar_models() + OPTIONAL_MODELS
 
 
 __all__ = ["get_model", "list_models", "utils"]
