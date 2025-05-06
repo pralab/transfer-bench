@@ -18,6 +18,12 @@ MODEL_NAMES = {
     "Amini2024MeanSparse_Swin-L": "\\amini",
     "Xu2024MIMIR_Swin-L": "\\mimir",
     "imagenet_resnet50_pubdef": "\\pubdef",
+    "cifar10_vgg19_bn": "\\vgg{19\\_bn}",
+    "cifar10_resnet56": "\\resnet{56}",
+    "cifar10_vit_b16": "\\vit{16}",
+    "cifar10_beit_b16": "\\beit{16}",
+    "Peng2023Robust": "\\peng",
+    "Bartoldson2024Adversarial_WRN-94-16": "\\bartoldson",
 }
 COLUMN_NAMES = {"avg_success": "ASR", "avg_queries": "$\\bar q$"}
 SCENARIO_NAMES = {"etero": "\\etero", "omeo": "\\omeo", "robust": "\\robust"}
