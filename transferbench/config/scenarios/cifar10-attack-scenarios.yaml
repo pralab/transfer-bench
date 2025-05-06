@@ -59,7 +59,7 @@ robust-cifar10-inf:
       maximum_queries: 50
       p: "inf"
       eps: 0.062745 # 16/255
-    victim_model: "Peng2023Robust" # https://www.kaggle.com/datasets/csitawarin/pubdef-defending-against-transfer-attacks/
+    victim_model: "Peng2023Robust" # https://github.com/RobustBench/robustbench#model-zoo
     surrogate_models: ["cifar10_resnet44", "cifar10_resnet32", "cifar10_shufflenetv2_x1_0"]  # ResPool
     dataset: "CIFAR10T"
     
@@ -67,6 +67,6 @@ robust-cifar10-inf:
       maximum_queries: 50
       p: "inf"
       eps: 0.062745 # 16/255
-    victim_model: "Bartoldson2024Adversarial_WRN-94-16" # https://www.kaggle.com/datasets/csitawarin/pubdef-defending-against-transfer-attacks/
+    victim_model: "Bartoldson2024Adversarial_WRN-94-16" # https://github.com/RobustBench/robustbench#model-zoo
     surrogate_models: ["cifar10_resnet44", "cifar10_resnet32", "cifar10_shufflenetv2_x1_0"]  # ResPool
     dataset: "CIFAR10T"
