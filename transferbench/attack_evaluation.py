@@ -22,7 +22,7 @@ class AttackEval:
     def __init__(self, transfer_attack: str | TransferAttack) -> None:
         r"""Evaluate the performance of a black-box attack.
 
-        The transfer attack is evaluated on default or customized scenarios (defaults are
+        The transfer attack is evaluated on default or customized scenarios (defaults
         defined in config). Each scenario encapsulate the victim and surrogates models,
         along with the dataset and the hyperparameters of the attack.
 

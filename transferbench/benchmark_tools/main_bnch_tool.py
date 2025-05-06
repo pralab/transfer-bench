@@ -8,7 +8,7 @@ from typing import Optional
 import wandb
 
 from .config import OmegaConf, cfg, user_cfg, user_cfg_path
-from .report_helpers import collect_results, make_tabulars, make_plots
+from .report_helpers import collect_results, make_plots, make_tabulars
 from .run_helpers import get_filtered_runs, run_single_scenario
 
 # Set up logging
