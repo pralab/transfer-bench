@@ -13,7 +13,7 @@ STD = (0.2023, 0.1994, 0.2010)
 
 ADDITIONAL_HUGG_MODELS = {
     "cifar10_swin_b": "Weili/swin-base-patch4-window7-224-in22k-finetuned-cifar10",
-    "cifar10_swin_t": "hgolchha/swin-tiny-patch4-window7-224-finetuned-eurosat",
+    "cifar10_swin_t": "Skafu/swin-tiny-patch4-window7-224-cifar10",
     "cifar10_vit_b16": "aaraki/vit-base-patch16-224-in21k-finetuned-cifar10",
     "cifar10_beit_b16": "jadohu/BEiT-finetuned",
     "cifar10_convnext_t": "ahsanjavid/convnext-tiny-finetuned-cifar10",
