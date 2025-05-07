@@ -52,7 +52,7 @@ def projected_gradient_descent(
         loss.sum().backward()
         with torch.no_grad():
             x = ball_projection(inputs, x - alpha * dot_projection(x.grad))
-    return torch.clamp(x, 0, 1)
+    return torch.clamp(x, 0, 1)  # , loss
 
 
 def naive_avg(
@@ -72,11 +72,12 @@ def naive_avg(
     dot_projection = partial(grad_projection, p=p)
     loss_fn = AggregatedEnsemble(surrogate_models)
     success = torch.zeros_like(labels).bool()
-    curr_adv = inputs.clone()
+    best_adv = inputs.clone()
+    # best_loss = torch.full_like(labels.float(), float("inf"))
     for q in range(maximum_queries + 1):
         if q > 0:  # first query is avoided
             # victim model use the mask to properly count the forward passes sample-wise
-            preds = victim_model(curr_adv, ~success).argmax(1)
+            preds = victim_model(best_adv, ~success).argmax(1)
             success = preds != labels if targets is None else preds == targets
         if success.all():
             break
@@ -84,7 +85,7 @@ def naive_avg(
         new_adv = projected_gradient_descent(
             loss_fn=loss_fn,
             inputs=inputs[~success],
-            x_init=curr_adv[~success],
+            x_init=best_adv[~success],
             labels=labels[~success],
             targets=targets[~success] if targets is not None else None,
             ball_projection=ball_projection,
@@ -92,8 +93,21 @@ def naive_avg(
             alpha=alpha,
             inner_iterations=inner_iterations,
         )
-        curr_adv[~success] = new_adv
-    return curr_adv
+        ## The besst
+        # best_condition = (
+        #    loss >= best_loss[~success]
+        #    if targets is None
+        #    else loss < best_loss[~success]
+        # )
+        # best_loss[~success] = torch.where(best_loss, loss, best_loss[~success])
+
+        # best_adv[~success] = torch.where(
+        #    best_condition[:, None, None, None],
+        #    new_adv,
+        #    best_adv[~success],
+        # )
+        best_adv[~success] = new_adv
+    return best_adv
 
 
 @dataclass
@@ -106,3 +120,11 @@ class NaiveAvgHyperParams:
 
 ## Wrap the attack to be used in the evaluators
 NaiveAvg: TransferAttack = partial(naive_avg, **asdict(NaiveAvgHyperParams()))
+
+NaiveAvg10: TransferAttack = partial(
+    naive_avg, **asdict(NaiveAvgHyperParams(inner_iterations=10))
+)
+
+NaiveAvg1k: TransferAttack = partial(
+    naive_avg, **asdict(NaiveAvgHyperParams(inner_iterations=1000))
+)  ##Very slow dont

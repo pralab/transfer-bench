@@ -3,7 +3,7 @@ r"""Attacks zoo."""
 from .bases import BASES
 from .dswea import DSWEA
 from .gaa import GAA
-from .naive_avg import NaiveAvg
+from .naive_avg import NaiveAvg, NaiveAvg1k, NaiveAvg10
 
 __OPTIONAL__ = {
     "AdaEA": "transferbench.attacks_zoo.oneshot_attacks.AdaEA",
@@ -46,4 +46,6 @@ __all__ = [
     "SVRE",
     "AdaEA",
     "NaiveAvg",
+    "NaiveAvg1k",
+    "NaiveAvg10",
 ]
