@@ -26,7 +26,7 @@ def transfer_attack(
     inputs: Tensor,
     labels: Tensor,
     targets: Optional[Tensor] = None,
-    maximum_queries: int = 1,
+    maximum_queries: int = 0,
     epoch: int = 100,
     p: float | str = "inf",
     eps: float = 16 / 255,
@@ -54,7 +54,10 @@ def transfer_attack(
         norm=norm,
         **attack_kwargs,
     )
-    labels = torch.stack([labels, targets]) if targeted else labels
+    if attack_name in ["ens", "lgv", "mba", "sasd_ws", "smer"]:
+        labels = torch.stack([labels, targets]) if targeted else labels
+    elif attack_name in ["adaea", "cwa", "svre"]:
+        labels = labels if not targeted else targets
     perturbations = attacker(inputs, labels).detach()
     return inputs + perturbations
 
