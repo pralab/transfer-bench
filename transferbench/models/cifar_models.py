@@ -73,8 +73,11 @@ class HuggingfaceModelWrapper(nn.Module):
 def get_hugg_model(model: str) -> nn.Module:
     r"""Return a model from huggingface repo."""
     model_path = ADDITIONAL_HUGG_MODELS[model]
+    proc_path = model_path
+    if "beit" in model:
+        proc_path = ADDITIONAL_HUGG_MODELS["cifar10_vit_b16"]  # bug in beit
     hug_model = AutoModelForImageClassification.from_pretrained(model_path)
-    hug_processor = AutoImageProcessor.from_pretrained(model_path, use_fast=True)
+    hug_processor = AutoImageProcessor.from_pretrained(proc_path, use_fast=True)
     return HuggingfaceModelWrapper(hug_model, hug_processor)
 
 
