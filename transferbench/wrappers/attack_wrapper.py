@@ -44,12 +44,12 @@ class AttackWrapper:
 
     def sanity_check(self) -> None:
         r"""Sanity check for the attack."""
-        assert isinstance(
-            self.hp, HyperParameters
-        ), "Hyperparameters should be a dataclass."
-        assert isinstance(
-            self.transfer_attack, TransferAttack
-        ), "The attack signature must satisfy the `types.TransferAttack` protocol."
+        assert isinstance(self.hp, HyperParameters), (
+            "Hyperparameters should be a dataclass."
+        )
+        assert isinstance(self.transfer_attack, TransferAttack), (
+            "The attack signature must satisfy the `types.TransferAttack` protocol."
+        )
 
     def wrap_models(
         self, victim_model: nn.Module, *surrogate_models: nn.Module
@@ -70,9 +70,9 @@ class AttackWrapper:
 
     def check_constraints(self, inputs: Tensor, adv: Tensor) -> bool:
         r"""Check if an example satisfies the constraints."""
-        assert lp_constraint(
-            inputs, adv, self.hp.eps, self.hp.p
-        ), "Constraint violated. The adversarial example is not a legitimate image"
+        assert lp_constraint(inputs, adv, self.hp.eps, self.hp.p), (
+            "Constraint violated. The adversarial example is not a legitimate image"
+        )
 
     def check_queries(self) -> None:
         r"""Check that the maximum number of queries has not been exceeded."""
