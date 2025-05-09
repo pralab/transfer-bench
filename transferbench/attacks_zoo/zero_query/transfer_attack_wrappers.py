@@ -5,10 +5,12 @@ from typing import Optional
 import torch
 from torch import Tensor, nn
 
-from transferbench.attacks_zoo.zero_query.TransferAttack import transferattack
+from transferbench.attacks_zoo.externals.TransferAttack import transferattack
 from transferbench.types import CallableModel
 
-from .TransferAttack.transferattack.utils import EnsembleModel
+from transferbench.attacks_zoo.externals.TransferAttack.transferattack.utils import (
+    EnsembleModel,
+)
 
 
 class LoadModelWrapper:
