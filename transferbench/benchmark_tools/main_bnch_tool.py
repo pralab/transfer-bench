@@ -206,6 +206,9 @@ def main() -> None:
             project_entity=args.project_entity,
         )
         sys.exit()
+    elif command == "report":
+        handle_report(args.download)
+        sys.exit()
     # Login to Weights & Biases-
     wandb.login()
     if command == "display":
@@ -221,5 +224,3 @@ def main() -> None:
             device=args.device,
             resume=not args.overwrite,
         )
-    elif command == "report":
-        handle_report(args.download)

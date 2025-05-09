@@ -1,6 +1,8 @@
 r"""Report helpers for transferbench."""
 
 import json
+from collections import defaultdict
+from itertools import zip_longest
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -13,20 +15,50 @@ from .wandb_helpers import WandbReader
 
 MODEL_NAMES = {
     "resnext101_32x8d": "\\resnext{101}",
-    "vgg19": "\\vgg{19}",
-    "vit_b_16": "\\vit{16}",
-    "Amini2024MeanSparse_Swin-L": "\\amini",
-    "Xu2024MIMIR_Swin-L": "\\mimir",
     "imagenet_resnet50_pubdef": "\\pubdef",
-    "cifar10_vgg19_bn": "\\vgg{19\\_bn}",
+    "vgg19": "\\vgg{19}",
+    "Amini2024MeanSparse_Swin-L": "\\amini",
+    "vit_b_16": "\\vit{16}",
+    "Xu2024MIMIR_Swin-L": "\\mimir",
+    "cifar10_vgg19_bn": "\\vgg{19-bn}",
     "cifar10_resnet56": "\\resnet{56}",
     "cifar10_vit_b16": "\\vit{16}",
     "cifar10_beit_b16": "\\beit{16}",
     "Peng2023Robust": "\\peng",
     "Bartoldson2024Adversarial_WRN-94-16": "\\bartoldson",
 }
+PLOT_MODEL_NAMES = {
+    "resnext101_32x8d": "resnext101",
+    "imagenet_resnet50_pubdef": "pubdef-resnet-50",
+    "vgg19": "vgg-19",
+    "Amini2024MeanSparse_Swin-L": "Amini-Swin-L",
+    "vit_b_16": "vit-16/b",
+    "Xu2024MIMIR_Swin-L": "Mimir-Swin-L",
+    "cifar10_vgg19_bn": "vgg-19-bn",
+    "cifar10_resnet56": "resnet-56",
+    "cifar10_vit_b16": "Vit-16/t",
+    "cifar10_beit_b16": "BeIT-16/b",
+    "Peng2023Robust": "Peng2023Robust",
+    "Bartoldson2024Adversarial_WRN-94-16": "Barto-WRN-94-16",
+}
 COLUMN_NAMES = {"avg_success": "ASR", "avg_queries": "$\\bar q$"}
-SCENARIO_NAMES = {"etero": "\\etero", "omeo": "\\omeo", "robust": "\\robust"}
+SCENARIO_NAMES = {"omeo": "\\omeo", "etero": "\\etero", "robust": "\\robust"}
+ATTACK_NAMES = {
+    "BASES": "BASES",
+    "CWA": "CWA",
+    "DSWEA": "DSWEA",
+    "ENS": "ENS",
+    "GAA": "GAA",
+    "LGV": "LGV",
+    "MBA": "MBA",
+    "SASD_WS": "SASD\\_WS",
+    "SMER": "SMER",
+    "SVRE": "SVRE",
+    "AdaEA": "AdaEA",
+    "NaiveAvg": "NaiveAvg",
+    "NaiveAvg1k": "NaiveAvg1k",
+    "NaiveAvg10": "NaiveAvg10",
+}
 
 
 def collect_results(download: bool) -> list[dict]:
@@ -47,35 +79,39 @@ def collect_results(download: bool) -> list[dict]:
         # create the directory
         report_dir.mkdir(parents=True, exist_ok=True)
         reader.download_results(report_dir)
-    ## Aggregate all the runs
-    results = []
-    for run_id in run_ids:
-        # open the json file in id directory
-        run_dir = report_dir / "tables" / run_id
-        # check if the directory exists
-        if run_dir.exists():
-            # open the json file
-            table = run_dir / "numerical-results.table.json"
-            # load the json file
-            with Path.open(table, "r") as f:
-                # read the json file
-                table = f.read()
-                json_data = json.loads(table)
-            columns = json_data["columns"]
-            data = json_data["data"]
-            df_run = pd.DataFrame(
-                data,
-                columns=columns,
-            )
-            df_run["id"] = run_id
-            results.append(df_run)
-    df_results = pd.concat(results, ignore_index=True)
-    # merge with configurations
-    return df_results.merge(
-        df_runs,
-        how="left",
-        on="id",
-    )
+        ## Aggregate all the runs
+        results = []
+        for run_id in run_ids:
+            # open the json file in id directory
+            run_dir = report_dir / "tables" / run_id
+            # check if the directory exists
+            if run_dir.exists():
+                # open the json file
+                table = run_dir / "numerical-results.table.json"
+                # load the json file
+                with Path.open(table, "r") as f:
+                    # read the json file
+                    table = f.read()
+                    json_data = json.loads(table)
+                columns = json_data["columns"]
+                data = json_data["data"]
+                df_run = pd.DataFrame(
+                    data,
+                    columns=columns,
+                )
+                df_run["id"] = run_id
+                results.append(df_run)
+        df_results = pd.concat(results, ignore_index=True)
+        # merge with configurations
+        df_results = df_results.merge(
+            df_runs,
+            how="left",
+            on="id",
+        )
+        # Save the file for speedup
+        df_results.to_csv(report_dir / "results.csv", index=False)
+        return df_results
+    return pd.read_csv(report_dir / "results.csv")
 
 
 def make_tabulars(df_results: pd.DataFrame) -> list[pd.DataFrame]:
@@ -156,7 +192,59 @@ def make_tabulars(df_results: pd.DataFrame) -> list[pd.DataFrame]:
     return tabulars
 
 
-def make_plots(df_results: pd.DataFrame) -> None:
+def make_barplots(df_results: pd.DataFrame) -> None:
+    for dataset in df_results["dataset"].unique():
+        df_loc = df_results[df_results["dataset"] == dataset]
+        df_loc = df_loc[df_loc["campaign"].isin(SCENARIO_NAMES.keys())]
+        # Replace queries with nan when success is 0
+        df_loc.loc[df_loc["success"] == 0, "queries"] = float("nan")
+        agg_df = (
+            df_loc.groupby(["attack", "campaign", "victim_model"])
+            .agg(
+                avg_success=("success", "mean"),
+                avg_queries=("queries", "mean"),
+                count=("success", "count"),
+            )
+            .reset_index()
+        )
+        agg_df.avg_success *= 100
+        agg_df = agg_df.rename(
+            columns={"campaign": "scenario", "victim_model": "victim"}
+        )
+        order = (
+            agg_df.groupby("attack")["avg_success"]
+            .mean()
+            .sort_values(ascending=False)
+            .index
+        )
+        print(order)
+        plt.figure(figsize=(10, 3.5))
+        sns.barplot(
+            data=agg_df,
+            x="attack",
+            y="avg_success",
+            order=order,
+            hue="scenario",
+            hue_order=SCENARIO_NAMES.keys(),
+            palette="Set2",
+            errorbar="se",
+        )
+
+        plt.title(f"Success Rate for {dataset}")
+        plt.xlabel("Attack")
+        plt.ylabel("Success Rate (%)")
+        plt.xticks(rotation=45)
+        plt.legend(title="Scenario")
+        # add grid
+        plt.grid(axis="y", linestyle="--", alpha=0.7)
+        plt.tight_layout()
+        plot_path = Path(cfg.report_root) / f"barplot_{dataset}.png"
+        plot_path.parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(plot_path, bbox_inches="tight")
+        plt.clf()
+
+
+def make_line_plots(df_results: pd.DataFrame) -> None:
     r"""Make side-by-side plots (one per scenario) from the results.
 
     Args:
@@ -164,44 +252,98 @@ def make_plots(df_results: pd.DataFrame) -> None:
     """
     for dataset in df_results["dataset"].unique():
         df_loc = df_results[df_results["dataset"] == dataset]
-        scenarios = [s for s in df_loc["campaign"].unique() if s in SCENARIO_NAMES]
+        df_sel = df_loc[["campaign", "victim_model"]].drop_duplicates()
+        df_sel = sorted(
+            df_sel.to_numpy(), key=lambda x: list(SCENARIO_NAMES.keys()).index(x[0])
+        )
+        df_sel = sorted(
+            df_sel,
+            key=lambda x: list(PLOT_MODEL_NAMES.keys()).index(x[1]),
+        )
+        buckets = defaultdict(list)
+        for key, value in df_sel:
+            buckets[key].append(value)
+        for key in SCENARIO_NAMES:
+            buckets[key]
 
-        # Set up subplots
-        fig, axes = plt.subplots(
-            1, len(scenarios), figsize=(4 * len(scenarios), 3), sharey=True
+        rows = list(
+            zip_longest(*(buckets[scn] for scn in SCENARIO_NAMES), fillvalue=None)
         )
 
-        if len(scenarios) == 1:
-            axes = [axes]  # Ensure axes is iterable if only one plot
-
-        for ax, scenario in zip(axes, scenarios, strict=True):
-            df_scenario = df_loc[df_loc["campaign"] == scenario].copy()
-            df_scenario.loc[df_scenario["success"] == 0, "queries"] = float("nan")
-            # Replace the success with the cumulative success
-            df_scenario = df_scenario.sort_values("queries")
-            df_scenario["success"] = df_scenario.groupby(["attack", "victim_model"])[
-                "success"
-            ].transform(lambda x: x.cumsum() / x.count())
-            df_scenario = df_scenario.sort_values("attack")
-            sns.lineplot(
-                data=df_scenario,
-                x="queries",
-                y="success",
-                hue="attack",
-                markers=True,
-                dashes=False,
-                ax=ax,
-                estimator=None,
-                units="victim_model",
+        for row in rows:
+            # Set up subplots
+            fig, axes = plt.subplots(
+                1,
+                len(row),
+                figsize=(4 * len(row), 3),
+                sharey=True,
             )
-            scenario_name = scenario.capitalize() + "Pool"
-            ax.set_title(scenario_name)
-            ax.set_xlabel("Queries")
-            ax.set_ylabel("Success Rate")
-            ax.legend(loc="best")
+            for ax, scenario, victim in zip(axes, SCENARIO_NAMES, row, strict=False):
+                df_scen_vict = df_loc[df_loc["campaign"] == scenario]
+                df_scen_vict = df_scen_vict[df_scen_vict["victim_model"] == victim]
+                df_scen_vict.loc[df_scen_vict["success"] == 0, "queries"] = float("nan")
+                df_scen_vict = df_scen_vict.sort_values("queries")
+                df_scen_vict["success"] = df_scen_vict.groupby(
+                    ["attack", "victim_model"]
+                )["success"].transform(lambda x: x.cumsum() / x.count())
+                df_scen_vict["success"] *= 100
+                df_scen_vict = df_scen_vict.sort_values("attack")
+                df_oneshot = df_scen_vict[df_scen_vict["queries"] == 0]
+                df_agg_oneshot = df_oneshot.groupby("attack").agg(
+                    success=("success", "max"), queries=("queries", "mean")
+                )
+                df_nquery = df_scen_vict[df_scen_vict["queries"] > 0]
+                legend = scenario == "robust"
+                if not df_nquery.empty:
+                    # Plot the success rate for each attack
+                    sns.lineplot(
+                        data=df_nquery,
+                        x="queries",
+                        y="success",
+                        hue="attack",
+                        markers=True,
+                        dashes=False,
+                        legend=legend,
+                        ax=ax,
+                        estimator=None,
+                    )
+                if not df_agg_oneshot.empty:
+                    # Plot the success rate for each attack
+                    sns.scatterplot(
+                        data=df_agg_oneshot.reset_index(),
+                        x="queries",
+                        y="success",
+                        style="attack",
+                        legend=legend,
+                        ax=ax,
+                    )
+                if victim is not None:
+                    plt_name = (
+                        PLOT_MODEL_NAMES[victim]
+                        + " on "
+                        + scenario.capitalize()
+                        + "Pool"
+                    )
+                    ax.set_title(plt_name)
+                    ax.set_xlabel("Queries")
+                    ax.set_ylabel("Attack Success Rate [%]")
+                    ax.set_xscale("symlog", base=2)
+                if legend:
+                    ax.legend(loc="upper left", bbox_to_anchor=(1, 1))
+                ax.grid(axis="y", linestyle="--", alpha=0.7)
+            plt.suptitle(f"ASR and queries-per-success on {dataset}", fontsize=16)
+            plt.tight_layout()
+            plot_path = Path(cfg.report_root) / f"plot_{dataset}_{row[0]}.png"
+            plot_path.parent.mkdir(parents=True, exist_ok=True)
+            plt.savefig(plot_path, bbox_inches="tight")
+            plt.clf()
 
-        plt.tight_layout()
-        plot_path = Path(cfg.report_root) / f"plot_{dataset}.png"
-        plot_path.parent.mkdir(parents=True, exist_ok=True)
-        plt.savefig(plot_path)
-        plt.clf()
+
+def make_plots(df_results: pd.DataFrame) -> None:
+    r"""Make plots from the results.
+
+    Args:
+        df_results (pd.DataFrame): DataFrame with the results.
+    """
+    make_line_plots(df_results)
+    make_barplots(df_results)

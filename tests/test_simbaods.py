@@ -1,6 +1,6 @@
 from torch.utils.data import Subset
 from transferbench.attack_evaluation import AttackEval
-from transferbench.attacks_zoo.simba_ods import SimbaODS
+from transferbench.attacks_zoo.query_based.simba_ods import SimbaODS
 from transferbench.datasets.datasets import ImageNetT
 from transferbench.scenarios import load_attack_scenario
 

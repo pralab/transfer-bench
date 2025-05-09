@@ -1,19 +1,19 @@
 r"""Attacks zoo."""
 
-from .bases import BASES
-from .dswea import DSWEA
-from .gaa import GAA
-from .naive_avg import NaiveAvg, NaiveAvg1k, NaiveAvg10
+from .query_based.bases import BASES
+from .query_based.dswea import DSWEA
+from .query_based.gaa import GAA
+from .query_based.naive_avg import NaiveAvg, NaiveAvg1k, NaiveAvg10
 
 __OPTIONAL__ = {
-    "AdaEA": "transferbench.attacks_zoo.oneshot_attacks.AdaEA",
-    "CWA": "transferbench.attacks_zoo.oneshot_attacks.CWA",
-    "ENS": "transferbench.attacks_zoo.oneshot_attacks.ENS",
-    "LGV": "transferbench.attacks_zoo.oneshot_attacks.LGV",
-    "MBA": "transferbench.attacks_zoo.oneshot_attacks.MBA",
-    "SASD_WS": "transferbench.attacks_zoo.oneshot_attacks.SASD_WS",
-    "SMER": "transferbench.attacks_zoo.oneshot_attacks.SMER",
-    "SVRE": "transferbench.attacks_zoo.oneshot_attacks.SVRE",
+    "AdaEA": "transferbench.attacks_zoo.zero_query.AdaEA",
+    "CWA": "transferbench.attacks_zoo.zero_query.CWA",
+    "ENS": "transferbench.attacks_zoo.zero_query.ENS",
+    "LGV": "transferbench.attacks_zoo.zero_query.LGV",
+    "MBA": "transferbench.attacks_zoo.zero_query.MBA",
+    "SASD_WS": "transferbench.attacks_zoo.zero_query.SASD_WS",
+    "SMER": "transferbench.attacks_zoo.zero_query.SMER",
+    "SVRE": "transferbench.attacks_zoo.zero_query.SVRE",
 }
 
 

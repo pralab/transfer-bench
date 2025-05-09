@@ -1,6 +1,6 @@
 from torch.utils.data import Subset
 from transferbench.attack_evaluation import AttackEval
-from transferbench.attacks_zoo.bases import BASES
+from transferbench.attacks_zoo import BASES
 from transferbench.datasets.datasets import ImageNetT
 from transferbench.scenarios import load_attack_scenario
 

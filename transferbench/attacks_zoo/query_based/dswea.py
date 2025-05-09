@@ -1,3 +1,5 @@
+r"""DSWEA attack implementation."""
+
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from functools import partial

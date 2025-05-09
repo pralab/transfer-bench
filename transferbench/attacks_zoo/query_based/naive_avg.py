@@ -73,7 +73,6 @@ def naive_avg(
     loss_fn = AggregatedEnsemble(surrogate_models)
     success = torch.zeros_like(labels).bool()
     best_adv = inputs.clone()
-    # best_loss = torch.full_like(labels.float(), float("inf"))
     for q in range(maximum_queries + 1):
         if q > 0:  # first query is avoided
             # victim model use the mask to properly count the forward passes sample-wise
@@ -93,19 +92,7 @@ def naive_avg(
             alpha=alpha,
             inner_iterations=inner_iterations,
         )
-        ## The besst
-        # best_condition = (
-        #    loss >= best_loss[~success]
-        #    if targets is None
-        #    else loss < best_loss[~success]
-        # )
-        # best_loss[~success] = torch.where(best_loss, loss, best_loss[~success])
 
-        # best_adv[~success] = torch.where(
-        #    best_condition[:, None, None, None],
-        #    new_adv,
-        #    best_adv[~success],
-        # )
         best_adv[~success] = new_adv
     return best_adv
 
