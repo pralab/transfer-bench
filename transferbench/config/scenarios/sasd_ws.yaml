@@ -1,0 +1,8 @@
+"sasd_ws":
+  - hp:
+      maximum_queries: 2
+      p: "inf"
+      eps: 0.062745 # 16/255
+    victim_model: "vit_b_32"
+    surrogate_models: ["vit_b_32"]
+    dataset: "ImageNetT"

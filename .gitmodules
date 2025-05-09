@@ -1,0 +1,3 @@
+[submodule "transferbench/attacks_zoo/externals/TransferAttack"]
+	path = transferbench/attacks_zoo/externals/TransferAttack
+	url = https://github.com/Trustworthy-AI-Group/TransferAttack.git

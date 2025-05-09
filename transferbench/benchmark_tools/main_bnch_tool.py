@@ -8,6 +8,7 @@ from typing import Optional
 import wandb
 
 from .config import OmegaConf, cfg, user_cfg, user_cfg_path
+from .report_helpers import collect_results, make_plots, make_tabulars
 from .run_helpers import get_filtered_runs, run_single_scenario
 
 # Set up logging
@@ -58,7 +59,11 @@ def parse_args() -> None:
         type=str,
         help="Lunch the runs selecting them by query. Example of usage.",
     )
-    parser_run.add_argument("--next", type=str, help="Next available run.")
+    parser_run.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Overwrite the run, do not resume the previous results.",
+    )
     parser_run.add_argument(
         "--device", type=str, default=cfg.default_device, help="Device to be used."
     )
@@ -85,11 +90,17 @@ def parse_args() -> None:
         type=str,
         help="Set project entity.",
     )
+    parser_report = subparser.add_parser("report", help="Generate a report.")
+    parser_report.add_argument(
+        "--download",
+        action="store_true",
+        help="Download the results from Weights & Biases.",
+    )
 
     return parser.parse_args()
 
 
-def run_batch(run_ids: list[str], batch_size: int, device: str) -> None:
+def run_batch(run_ids: list[str], batch_size: int, device: str, resume: bool) -> None:
     r"""Run a single scenario."""
     for run_id in run_ids:
         # Check if the run is already running
@@ -98,8 +109,8 @@ def run_batch(run_ids: list[str], batch_size: int, device: str) -> None:
             logger.info(msg)
             continue
         try:
-            run_single_scenario(run_id, batch_size, device)
-        except KeyboardInterrupt:  # noqa: PERF203
+            run_single_scenario(run_id, batch_size, device, resume)
+        except KeyboardInterrupt:
             logger.info("Keyboard interrupt detected. Exiting...")
             sys.exit(1)
         except Exception as e:
@@ -122,7 +133,11 @@ def handle_display(
 
 
 def handle_runs(
-    run_ids: Optional[list[str]], query: Optional[str], batch_size: int, device: str
+    run_ids: Optional[list[str]],
+    query: Optional[str],
+    batch_size: int,
+    device: str,
+    resume: bool,
 ) -> None:
     r"""Handle the run subcommand."""
     run_ids = run_ids if run_ids is not None else []
@@ -148,7 +163,7 @@ def handle_runs(
     log_msg = f"Processing runs: \n {df_runs.to_markdown(index=False)}"
     logger.info(log_msg)
     run_ids = df_runs["id"].tolist()
-    run_batch(run_ids, batch_size, device)
+    run_batch(run_ids, batch_size, device, resume)
 
 
 def handle_config(
@@ -168,6 +183,16 @@ def handle_config(
     logger.info(info_msg)
 
 
+def handle_report(download: bool = False) -> None:
+    r"""Handle the report subcommand."""
+    # collect finished runs
+    df_results = collect_results(download=download)
+    make_tabulars(df_results)[0]
+    logger.info("Report generated.")
+    make_plots(df_results)
+    logger.info("Plots generated.")
+
+
 def main() -> None:
     r"""Entrypoint to run the script."""
     # Parse the command line arguments
@@ -180,6 +205,9 @@ def main() -> None:
             project_name=args.project_name,
             project_entity=args.project_entity,
         )
+        sys.exit()
+    elif command == "report":
+        handle_report(args.download)
         sys.exit()
     # Login to Weights & Biases-
     wandb.login()
@@ -194,4 +222,5 @@ def main() -> None:
             query=args.query,
             batch_size=args.batch_size,
             device=args.device,
+            resume=not args.overwrite,
         )

@@ -1,0 +1,37 @@
+r"""Test the pubdef models."""
+
+import torch
+from transferbench.datasets import get_loader
+from transferbench.models import get_model, list_models
+
+# Evaluate the models accuracy on ImageNet
+
+
+@torch.no_grad()
+def acc(model: str, batch_size: int = 200) -> float:
+    """Get the accuracy of the model on CIFAR10."""
+    model.eval().to("cpu")
+    loader = get_loader("CIFAR10T", batch_size=batch_size, device="cpu")
+    acc = 0.0
+    for inputs, labels, _ in loader:
+        outputs = model(inputs)
+        acc += (outputs.argmax(1) == labels).float().sum()
+    return acc / len(loader.dataset)
+
+
+def check_models():
+    available_models = [model for model in list_models() if "cifar10_" in model]
+    for model_name in available_models:
+        print(f"Loading model: {model_name}: ...", end="\r")
+        try:
+            model = get_model(model_name)
+            print(f"Loading model: {model_name}: Done. Accuracy: {acc(model)}")
+        except Exception as e:
+            print(f"Loading model: {model_name}: Failed. Error: {e}")
+            continue
+
+    print("All models loaded successfully.")
+
+
+if __name__ == "__main__":
+    check_models()

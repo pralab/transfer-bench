@@ -105,7 +105,7 @@ class AttackWrapper:
         self.reset(inputs)
         adv = self.transfer_attack(
             self.victim_model.__call__,
-            [model.__call__ for model in self.surrogate_models],
+            self.surrogate_models,
             inputs,
             labels,
             targets,

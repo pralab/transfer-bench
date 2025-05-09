@@ -4,10 +4,12 @@ from pathlib import PosixPath
 from types import TracebackType
 from typing import Optional
 
+import torch
 import wandb
 from wandb.apis.public import Run
 
 from .config import cfg
+from pandas import DataFrame
 
 
 class WandbReader:
@@ -31,13 +33,17 @@ class WandbReader:
     def get_runs_states(self):
         return [r.state for r in self.get_runs()]
 
-    def download_results(self):
-        msg = "This function is not implemented yet."
-        raise NotImplementedError(msg)
+    def download_results(self, root: PosixPath) -> None:
+        """Download the results from Weights & Biases."""
         for r in self.get_runs():
-            results = r.summary.get("results")
-            table_path = results.get("path")
-            r.file(table_path).download(f"results/{r.id}")
+            table_name = self.connection_url + f"/run-{r.id}-numerical-results:latest"
+            try:
+                table = self.api.artifact(table_name)
+                table.download(root / "tables" / r.id)
+            except Exception as e:
+                _ = f"Error while downloading {table_name}.\n {e}"
+            finally:
+                pass
 
 
 class WandbRun:
@@ -53,13 +59,14 @@ class WandbRun:
         self.run_id = run_id
         self.config = config
         self.dir = path
-        self.table = None
+        self.project_name = cfg.project_name
+        self.entity = cfg.project_entity
 
     def __enter__(self) -> "WandbRun":
         """Open the wandb connection."""
-        wandb.init(
-            project=cfg.project_name,
-            entity=cfg.project_entity,
+        self.run = wandb.init(
+            project=self.project_name,
+            entity=self.entity,
             id=self.run_id,
             resume="allow",
             config=self.config,
@@ -79,22 +86,18 @@ class WandbRun:
         artifact.save()
         wandb.log_artifact(artifact)
 
-    def __init_table__(self, columns: list[str]) -> None:
-        """Initialize the wandb table."""
-        self.table = wandb.Table(
-            columns=columns,
-        )
-        self.table.metadata = self.config
+    def get_data(self, artifact_name: str, art_type: str) -> None:
+        """Get data from wandb as an artifact."""
+        artifact = self.run.use_artifact(artifact_name, type=art_type)
+        artifact_dir = PosixPath("./tmp")
+        data_path = artifact.file(artifact_dir)
+        return torch.load(data_path, weights_only=False)
 
-    def update_table(self, **data) -> None:
+    def upload_table(self, dataframe: DataFrame) -> None:
         """Update the wandb table with new data."""
-        if self.table is None:
-            self.__init_table__(columns=list(data.keys()))
-        lenght = len(next(iter(data.values())))
-        for idx in range(lenght):
-            row = [data[key][idx].item() for key in data]
-            self.table.add_data(*row)
-        wandb.log({"numerical-results": self.table})
+        table = wandb.Table(dataframe=dataframe)
+        table.metadata = self.config
+        wandb.log({"numerical-results": table})
 
     def log(self, **data) -> None:
         """Log data to wandb."""

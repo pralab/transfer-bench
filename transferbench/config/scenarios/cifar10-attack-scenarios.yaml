@@ -1,6 +1,72 @@
-"sabre": "https://github.com/Mobile-Intelligence-Lab/SABRE/blob/main/artifacts/saved_models/SABRE/cifar10/model.weights.pth"
 
-"lipnet": "1LipschitzLayerCompared"
+## Scenarios for cifar10 attacks
+etero-cifar10-inf:
+  - hp: 
+      maximum_queries: 50
+      p: "inf"
+      eps: 0.062745 # 16/255
+    victim_model: "cifar10_vgg19_bn"
+    surrogate_models: ["cifar10_resnet44", "cifar10_resnet32", "cifar10_shufflenetv2_x1_0", "cifar10_swin_b", "cifar10_swin_t", "cifar10_vit_b16"]  # CNNPool
+    dataset: "CIFAR10T" 
+
+  - hp: 
+      maximum_queries: 50
+      p: "inf"
+      eps: 0.062745 # 16/255
+    victim_model: "cifar10_resnet56"
+    surrogate_models: ["cifar10_vgg13_bn", "cifar10_convnext_t", "cifar10_vgg16_bn",  "cifar10_swin_b", "cifar10_swin_t", "cifar10_vit_b16"]  # ResPool
+    dataset: "CIFAR10T"
+
+  - hp: 
+      maximum_queries: 50
+      p: "inf"
+      eps: 0.062745 # 16/255
+    victim_model: "cifar10_vit_b16"
+    surrogate_models: ["cifar10_vgg13_bn", "cifar10_convnext_t", "cifar10_vgg16_bn", "cifar10_resnet44", "cifar10_resnet32", "cifar10_shufflenetv2_x1_0"]  # ViTPool
+    dataset: "CIFAR10T"
 
 
 
+omeo-cifar10-inf:
+  - hp: 
+      maximum_queries: 50
+      p: "inf"
+      eps: 0.062745 # 16/255
+    victim_model: "cifar10_vgg19_bn"
+    surrogate_models: ["cifar10_vgg13_bn", "cifar10_convnext_t", "cifar10_vgg16_bn"]  # CNNPool
+    dataset: "CIFAR10T"
+
+  - hp: 
+      maximum_queries: 50
+      p: "inf"
+      eps: 0.062745 # 16/255
+    victim_model: "cifar10_resnet56"
+    surrogate_models: ["cifar10_resnet44", "cifar10_resnet32", "cifar10_shufflenetv2_x1_0"]  # ResPool
+    dataset: "CIFAR10T"
+
+  - hp: 
+      maximum_queries: 50
+      p: "inf"
+      eps: 0.062745 # 16/255
+    victim_model: "cifar10_beit_b16"
+    surrogate_models: [ "cifar10_swin_b", "cifar10_swin_t", "cifar10_vit_b16"]  # ViTPool
+    dataset: "CIFAR10T"
+  
+
+
+robust-cifar10-inf:
+  - hp: 
+      maximum_queries: 50
+      p: "inf"
+      eps: 0.062745 # 16/255
+    victim_model: "Peng2023Robust" # https://github.com/RobustBench/robustbench#model-zoo
+    surrogate_models: ["cifar10_resnet44", "cifar10_resnet32", "cifar10_shufflenetv2_x1_0"]  # ResPool
+    dataset: "CIFAR10T"
+    
+  - hp: 
+      maximum_queries: 50
+      p: "inf"
+      eps: 0.062745 # 16/255
+    victim_model: "Bartoldson2024Adversarial_WRN-94-16" # https://github.com/RobustBench/robustbench#model-zoo
+    surrogate_models: ["cifar10_resnet44", "cifar10_resnet32", "cifar10_shufflenetv2_x1_0"]  # ResPool
+    dataset: "CIFAR10T"

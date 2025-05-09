@@ -1,15 +1,19 @@
 r"""Attacks zoo."""
 
-from .bases import BASES
-from .dswea import DSWEA
-from .gaa import GAA
-from .mgaa import MGAA
-from .naive_avg import NaiveAvg
+from .query_based.bases import BASES
+from .query_based.dswea import DSWEA
+from .query_based.gaa import GAA
+from .query_based.naive_avg import NaiveAvg, NaiveAvg1k, NaiveAvg10
 
 __OPTIONAL__ = {
-    # "BASES": "transferbench.attacks_zoo.bases.BASES",  # noqa: ERA001
-    # "GAA": "transferbench.attacks_zoo.gaa.GAA",  # noqa: ERA001
-    # "DSWEA": "transferbench.attacks_zoo.dswea.DSWEA",  # noqa: ERA001
+    "AdaEA": "transferbench.attacks_zoo.zero_query.AdaEA",
+    "CWA": "transferbench.attacks_zoo.zero_query.CWA",
+    "ENS": "transferbench.attacks_zoo.zero_query.ENS",
+    "LGV": "transferbench.attacks_zoo.zero_query.LGV",
+    "MBA": "transferbench.attacks_zoo.zero_query.MBA",
+    "SASD_WS": "transferbench.attacks_zoo.zero_query.SASD_WS",
+    "SMER": "transferbench.attacks_zoo.zero_query.SMER",
+    "SVRE": "transferbench.attacks_zoo.zero_query.SVRE",
 }
 
 
@@ -29,4 +33,19 @@ def __getattr__(name: str):  # noqa: ANN202
     raise AttributeError(msg)
 
 
-__all__ = ["BASES", "DSWEA", "GAA", "NaiveAvg"]
+__all__ = [
+    "BASES",
+    "CWA",
+    "DSWEA",
+    "ENS",
+    "GAA",
+    "LGV",
+    "MBA",
+    "SASD_WS",
+    "SMER",
+    "SVRE",
+    "AdaEA",
+    "NaiveAvg",
+    "NaiveAvg1k",
+    "NaiveAvg10",
+]

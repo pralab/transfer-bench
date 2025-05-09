@@ -27,7 +27,7 @@ class TransferAttack(Protocol):
     def __call__(
         self,
         victim_model: CallableModel,
-        surrogate_models: list[CallableModel],
+        surrogate_models: list[Module],
         inputs: Tensor,
         labels: Tensor,
         targets: Optional[Tensor] = None,
@@ -39,8 +39,8 @@ class TransferAttack(Protocol):
 
         Parameters
         ----------
-        - victim_model (VictimModel): The victim model.
-        - surrogate_models (SurrogateModels): The surrogate models.
+        - victim_model (CallableModel): The victim model.
+        - surrogate_models (list[Modules]): The surrogate models.
         - inputs (Tensor): The input samples.
         - labels (Tensor): The labels.
         - targets (Tensor): The target labels for targeted-attack.
@@ -52,11 +52,11 @@ class TransferAttack(Protocol):
         -------
         - Tensor: The adversarial examples.
 
-        The attack step function should have the following signature:
+        The transfer_attack function should have the following signature:
         ```
-        def attack_step(
+        def my_transfer_attack(
             victim_model: CallableModel,
-            *surrogate_models: CallableModel,
+            surrogate_models: list[Module],
             inputs: Tensor,
             labels: Tensor,
             targets: Optional[Tensor] = None,
@@ -67,8 +67,9 @@ class TransferAttack(Protocol):
             ...
         ```
         N.B the attack can work either in batch or single sample mode, nevertheless the
-        queries of the victim are counted batch-wise and not sample-wise, hence avoid
-        for loops, and prefer masks.
+        queries of the victim are counted sample-wise only if a mask containing the
+        information of the samples that needs to be computed is provided. Without a
+        mask the queries are computed, batch-wise.
         """
 
 
@@ -132,4 +133,5 @@ class Config:
     allowed_scenarios: list[str]
     default_device: str
     results_root: str
+    reports_root: str
     columns: list[str]

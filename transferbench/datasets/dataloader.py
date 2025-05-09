@@ -21,7 +21,7 @@ class DataLoader(DataLoader_):
         self,
         dataset: Dataset,
         batch_size: int | None = 1,
-        shuffle: bool | None = None,
+        shuffle: bool = False,
         sampler: Sampler | Iterable | None = None,
         batch_sampler: Sampler[list] | Iterable[list] | None = None,
         num_workers: int = 0,

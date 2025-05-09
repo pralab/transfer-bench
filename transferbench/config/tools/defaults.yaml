@@ -8,10 +8,14 @@ allowed_scenarios:
   - "omeo-imagenet-inf"
   - "etero-imagenet-inf"
   - "robust-imagenet-inf"
+  - "omeo-cifar10-inf"
+  - "etero-cifar10-inf"
+  - "robust-cifar10-inf"
   - "debug"
 
 default_device: "cuda"
 results_root: "./data"
+report_root: "./report"
 
 columns:
   - "id"

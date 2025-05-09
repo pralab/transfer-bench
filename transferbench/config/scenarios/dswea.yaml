@@ -3,7 +3,7 @@ dswea:
   - hp:
       eps: 0.062745
       p: "inf"
-      maximum_queries: 10
+      maximum_queries: 50
     victim_model: "vgg19"
     surrogate_models : 
       - 'vgg16'
@@ -15,6 +15,5 @@ dswea:
       - 'efficientnet_b0'
       - 'regnet_x_400mf'
       - 'resnext101_32x8d'
-      - 'convnext_small'
       - 'vgg13'
     dataset: "ImageNetT"
