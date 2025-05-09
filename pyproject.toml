@@ -37,7 +37,6 @@ robust = [
     "autoattack @ git+https://github.com/fra31/auto-attack",
     "timm==1.0.9",
     "frozendict",
-    "transformers",
 ]
 cifar = ["timm==1.0.9", "transformers"]
 
