@@ -46,7 +46,7 @@ class ImageResizer(nn.Module):
 
     def forward(self, inputs: Tensor) -> Tensor:
         r"""Resize input image to the specified size."""
-        if inputs.shape[:2] != self.size:
+        if inputs.shape[2:] != self.size:
             return nn.functional.interpolate(inputs, size=self.size)
         return inputs
 
