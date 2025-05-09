@@ -1,0 +1,9 @@
+
+"debug":
+  - hp:
+      maximum_queries: 50
+      p: 
+      eps: 0.473286 # (0.001*224)**0.5
+    victim_model: "vgg16"
+    surrogate_models: ["vgg19", "resnet34", "densenet121", "mobilenet_v2"]
+    dataset: "ImageNetT"

@@ -1,6 +1,7 @@
 r"""Utility functions for the attacks."""
 
 from collections.abc import Callable
+from typing import Optional
 
 import torch
 from torch import Tensor, nn
@@ -94,3 +95,45 @@ class AggregatedEnsemble(BaseEnsembleLoss):
         ens_loss = torch.stack(ens_loss)
         weights = self.weights.view(-1, 1).to(ens_loss.device)
         return (ens_loss * weights).sum(0)
+
+
+def grad_projection(g: Tensor, p: float | str) -> Tensor:
+    r"""Return the unitary version of psi() function."""
+    if float(p) == float("inf"):
+        return g.sign()
+    q = 1 / (1 - 1 / p)
+    if float(p) == 1:
+        q = 100  # trick to handling all the norms
+    g = g.abs().pow(q - 1) * g.sign()
+    return g / torch.norm(g, p=p, dim=(1, 2, 3), keepdim=True)
+
+
+def lp_projection(x: Tensor, adv: Tensor, eps: float, p: float | str) -> Tensor:
+    r"""Return the projection of x on the lp ball."""
+    if float(p) == float("inf"):
+        return torch.clamp(adv - x, -eps, eps) + x
+    if float(p) == 1:
+        raise NotImplementedError
+    return (adv - x).renorm(p=p, dim=0, maxnorm=eps) + x
+
+
+def projected_gradient_descent(
+    loss_fn: Callable[[Tensor, Tensor], Tensor],
+    inputs: Tensor,
+    x_init: Tensor,
+    labels: Tensor,
+    targets: Optional[Tensor],
+    ball_projection: Callable[[Tensor], Tensor],
+    dot_projection: Callable[[Tensor], Tensor],
+    alpha: float,
+    inner_iterations: int,
+) -> Tensor:
+    r"""Implement the projected gradient descent."""
+    x = x_init.clone()
+    for _ in range(inner_iterations):
+        x.requires_grad_()
+        loss = -loss_fn(x, labels) if targets is None else loss_fn(x, targets)
+        loss.sum().backward()
+        with torch.no_grad():
+            x = ball_projection(inputs, x - alpha * dot_projection(x.grad))
+    return torch.clamp(x, 0, 1)  # , loss

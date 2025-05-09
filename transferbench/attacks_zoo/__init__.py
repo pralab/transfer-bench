@@ -1,9 +1,6 @@
 r"""Attacks zoo."""
 
-from .query_based.bases import BASES
-from .query_based.dswea import DSWEA
-from .query_based.gaa import GAA
-from .query_based.naive_avg import NaiveAvg, NaiveAvg1k, NaiveAvg10
+from .query_based import BASES, DSWEA, GAA, GFCS, NaiveAvg, NaiveAvg1k, NaiveAvg10
 
 __OPTIONAL__ = {
     "AdaEA": "transferbench.attacks_zoo.zero_query.AdaEA",

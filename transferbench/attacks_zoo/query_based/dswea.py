@@ -10,8 +10,7 @@ from torch import Tensor
 
 from transferbench.types import CallableModel, TransferAttack
 
-from .naive_avg import grad_projection, lp_projection
-from .utils import hinge_loss
+from .utils import grad_projection, hinge_loss, lp_projection
 
 
 @torch.no_grad()

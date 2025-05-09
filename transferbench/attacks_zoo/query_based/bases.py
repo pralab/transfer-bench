@@ -1,4 +1,4 @@
-r"""Reimplementation of the bases attack from the paper.
+r"""Batched immplementation of the bases attack from the paper.
 
 `https://proceedings.neurips.cc/paper_files/paper/2022/file/23b9d4e18b151ba2108fb3f1efaf8de4-Paper-Conference.pdf`.
 """
@@ -12,8 +12,12 @@ from torch import Tensor
 
 from transferbench.types import CallableModel, TransferAttack
 
-from .naive_avg import grad_projection, lp_projection, projected_gradient_descent
-from .utils import hinge_loss
+from .utils import (
+    grad_projection,
+    hinge_loss,
+    lp_projection,
+    projected_gradient_descent,
+)
 
 LR_BOOTSTRAP = 5  # Learning rate is divided by 2 only after 5 queries
 
