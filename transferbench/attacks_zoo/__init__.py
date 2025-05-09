@@ -3,6 +3,7 @@ r"""Attacks zoo."""
 from .bases import BASES
 from .dswea import DSWEA
 from .gaa import GAA
+from .mgaa import MGAA
 from .naive_avg import NaiveAvg
 
 __OPTIONAL__ = {
