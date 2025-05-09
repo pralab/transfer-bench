@@ -13,14 +13,19 @@ TransferBench is a Python package designed for evaluating black-box transfer att
 To install the standard version:
 
 ```bash
-pip install git+ssh://git@github.com/fabiobrau/transfer-bench.git
+pip install git+https://git@github.com/pralab/transfer-bench.git
 ```
 
-To enable robust evaluation scenarios (with additional dependencies):
+To enable evaluation on robust scenarios or cifar datasets, install the additional dependencies:
 
 ```bash
-pip install git+ssh://git@github.com/fabiobrau/transfer-bench.git#egg=transferbench[robust]
+pip install "git+https://git@github.com/pralab/transfer-bench.git#egg=transferbench[robust]"
 ```
+or
+```bash
+pip install "git+https://git@github.com/pralab/transfer-bench.git#egg=transferbench[cifar]"
+```
+**quotes are needed**
 
 ## Quickstart 📌
 
