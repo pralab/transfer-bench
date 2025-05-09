@@ -25,8 +25,12 @@ def __getattr__(name: str):  # noqa: ANN202
             return getattr(module, class_name)
         except ImportError as error:
             msg = (
-                f"Attack '{name}' requires 'full' option. "
-                f"Install with: pip install 'transferbench[full]'"
+                f"It seems you are trying to use '{name}' attack which is wrapped "
+                f"with TransferBench from an external library. If you started the"
+                f"evaluation by cloning the repository, please run"
+                f"'git submodule update --init --recursive' to update the submodules."
+                f"Otherwise, please install the TransferBench library by running"
+                f"'pip install transferbench' "
             )
             raise ImportError(msg) from error
     msg = f"module {__name__!r} has no attribute {name!r}"
