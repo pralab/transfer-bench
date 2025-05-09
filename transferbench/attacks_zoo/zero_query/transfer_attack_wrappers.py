@@ -19,17 +19,6 @@ class LoadModelWrapper:
         r"""Load the surrogate models into the ensemble model."""
         return EnsembleModel(surrogate_models)
 
-    def DI(self, inputs: Tensor, **kwargs) -> Tensor:  # noqa: N802
-        r"""Override the DI function to disable it.
-
-        The DI function is used by SASD to randomly resize the input image, that
-        neverthless would required an input interpolation at the beginning of
-        the module wrapper, possibily leading to a wrong gradient computation for
-        other attacks.
-        """
-        # This is a placeholder for the DI function.
-        return inputs
-
 
 def transfer_attack(
     victim_model: CallableModel,
