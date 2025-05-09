@@ -6,11 +6,10 @@ import torch
 from torch import Tensor, nn
 
 from transferbench.attacks_zoo.externals.TransferAttack import transferattack
-from transferbench.types import CallableModel
-
 from transferbench.attacks_zoo.externals.TransferAttack.transferattack.utils import (
     EnsembleModel,
 )
+from transferbench.types import CallableModel
 
 
 class LoadModelWrapper:
@@ -20,8 +19,14 @@ class LoadModelWrapper:
         r"""Load the surrogate models into the ensemble model."""
         return EnsembleModel(surrogate_models)
 
-    def DI(self, inputs: Tensor, **kwargs) -> Tensor:  # SASD_WS workaround
-        r"""Override the DI function to disable it."""
+    def DI(self, inputs: Tensor, **kwargs) -> Tensor:  # noqa: N802
+        r"""Override the DI function to disable it.
+
+        The DI function is used by SASD to randomly resize the input image, that
+        neverthless would required an input interpolation at the beginning of
+        the module wrapper, possibily leading to a wrong gradient computation for
+        other attacks.
+        """
         # This is a placeholder for the DI function.
         return inputs
 
