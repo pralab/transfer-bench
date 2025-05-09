@@ -31,6 +31,35 @@ class ImageNormalizer(nn.Module):
         return f"ImageNormalizer(mean={self.mean.squeeze()}, std={self.std.squeeze()})"
 
 
+class ImageResizer(nn.Module):
+    r"""Resize input image to the specified size."""
+
+    def __init__(self, size: tuple[int, int]) -> None:
+        r"""Initialize the ImageResizer module.
+
+        Parameters
+        ----------
+        - size (tuple[int, int]): Target size for resizing.
+        """
+        super().__init__()
+        self.size = size
+
+    def forward(self, inputs: Tensor) -> Tensor:
+        r"""Resize input image to the specified size."""
+        if inputs.shape[:2] != self.size:
+            return nn.functional.interpolate(inputs, size=self.size)
+        return inputs
+
+    def __repr__(self) -> str:
+        r"""Return the string representation of the ImageResizer module."""
+        return f"ImageResizer(size={self.size})"
+
+
+def add_resizing(model: Module, size: tuple[int, int]) -> Module:
+    r"""Add a resizing layer to the model."""
+    return nn.Sequential(ImageResizer(size), model)
+
+
 def add_normalization(model: Module, mean: tuple[float], std: tuple[float]) -> Module:
     r"""Add a normalization layer to the model."""
     return nn.Sequential(ImageNormalizer(mean, std), model)

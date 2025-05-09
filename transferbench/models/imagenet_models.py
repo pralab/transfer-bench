@@ -6,9 +6,7 @@ from torchvision.models import get_model_weights
 from torchvision.models import list_models as list_models_
 from torchvision.transforms._presets import ImageClassification
 
-from .utils import add_normalization
-
-EXCLUDE_MODELS = ["vit_h_14"]  # minium inputs size is higher than 224x224
+from .utils import add_normalization, add_resizing
 
 
 def is_an_image_classifier(model_id: str) -> bool:
@@ -53,9 +51,7 @@ def list_models() -> list[str]:
     return [
         model
         for model in list_models_()
-        if is_an_image_classifier(model)
-        and not is_quantized(model)
-        and model not in EXCLUDE_MODELS
+        if is_an_image_classifier(model) and not is_quantized(model)
     ]
 
 
@@ -81,4 +77,8 @@ def get_model(model_id: str) -> list[Module]:
         raise ValueError(msg)
     mean = model_weight.transforms().mean
     std = model_weight.transforms().std
-    return add_normalization(get_model_(model_id, weights=model_weight), mean, std)
+    model = get_model_(model_id, weights=model_weight)
+    if "vit_" in model_id:
+        # ViT models require resizing to 224x224
+        model = add_resizing(model, (224, 224))
+    return add_normalization(model, mean, std)
