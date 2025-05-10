@@ -25,7 +25,7 @@ MODEL_NAMES = {
     "cifar10_vit_b16": "\\vit{16}",
     "cifar10_beit_b16": "\\beit{16}",
     "Peng2023Robust": "\\peng",
-    "Bartoldson2024Adversarial_WRN-94-16": "\\bartoldson",
+    "Bartoldson2024Adversarial_WRN-94-16": "\\bartold",
 }
 PLOT_MODEL_NAMES = {
     "resnext101_32x8d": "resnext101",
@@ -41,23 +41,20 @@ PLOT_MODEL_NAMES = {
     "Peng2023Robust": "Peng2023Robust",
     "Bartoldson2024Adversarial_WRN-94-16": "Barto-WRN-94-16",
 }
-COLUMN_NAMES = {"avg_success": "ASR", "avg_queries": "$\\bar q$"}
+METRIC_NAME = {"avg_success": "ASR", "avg_queries": "$\\bar q$"}
 SCENARIO_NAMES = {"omeo": "\\omeo", "etero": "\\etero", "robust": "\\robust"}
 ATTACK_NAMES = {
     "BASES": "BASES",
-    "CWA": "CWA",
     "DSWEA": "DSWEA",
-    "ENS": "ENS",
     "GAA": "GAA",
+    "NaiveAvg": "NaiveAvg",
+    "NaiveAvg10": "NaiveAvg10",
+    "ENS": "ENS",
+    "CWA": "CWA",
     "LGV": "LGV",
     "MBA": "MBA",
     "SASD_WS": "SASD\\_WS",
-    "SMER": "SMER",
     "SVRE": "SVRE",
-    "AdaEA": "AdaEA",
-    "NaiveAvg": "NaiveAvg",
-    "NaiveAvg1k": "NaiveAvg1k",
-    "NaiveAvg10": "NaiveAvg10",
 }
 
 
@@ -128,7 +125,10 @@ def make_tabulars(df_results: pd.DataFrame) -> list[pd.DataFrame]:
 
     for dataset in datasets:
         df_loc = df_results[df_results["dataset"] == dataset]
+        # filter out unwanted campaigns
         df_loc = df_loc[df_loc["campaign"].isin(SCENARIO_NAMES.keys())]
+        # Filter unwnanted attacks
+        df_loc = df_loc[df_loc["attack"].isin(ATTACK_NAMES.keys())]
         # Replace queries with nan when success is 0
         df_loc.loc[df_loc["success"] == 0, "queries"] = float("nan")
 
@@ -141,8 +141,9 @@ def make_tabulars(df_results: pd.DataFrame) -> list[pd.DataFrame]:
             )
             .reset_index()
         )
+
         agg_df.avg_success *= 100
-        agg_df = agg_df.rename(
+        agg_df: pd.DataFrame = agg_df.rename(
             columns={"campaign": "scenario", "victim_model": "victim"}
         )
 
@@ -150,31 +151,39 @@ def make_tabulars(df_results: pd.DataFrame) -> list[pd.DataFrame]:
             index="attack",
             columns=["scenario", "victim"],
             values=["avg_success", "avg_queries"],
+            dropna=False,
         )
 
+        # Rearrange the columns
+
+        def metric_key(row: tuple) -> int:
+            return list(METRIC_NAME.keys()).index(row[0])
+
+        def scenario_key(row: tuple) -> int:
+            return list(SCENARIO_NAMES.keys()).index(row[1])
+
+        def model_key(row: tuple) -> int:
+            return list(MODEL_NAMES.keys()).index(row[2])
+
+        pivot_df = pivot_df[
+            sorted(
+                sorted(sorted(pivot_df.columns, key=metric_key), key=scenario_key),
+                key=model_key,
+            )
+        ]
         # Rename MultiIndex columns using the mapping dictionaries
         new_columns = []
         for col in pivot_df.columns:
             metric, scenario, model = col
-            new_metric = COLUMN_NAMES.get(metric, metric)
+            new_metric = METRIC_NAME.get(metric, metric)
             new_scenario = SCENARIO_NAMES.get(scenario, scenario)
             new_model = MODEL_NAMES.get(model, model)
             new_columns.append((new_model, new_scenario, new_metric))
 
         pivot_df.columns = pd.MultiIndex.from_tuples(new_columns)
 
-        # Rearrange the columns to match the order: scenario, model, {ASR, \bar q}
-        def metric_key(row: tuple) -> int:
-            return 0 if row[2] == "ASR" else 1
-
-        pivot_df = pivot_df[
-            sorted(
-                sorted(
-                    sorted(pivot_df.columns, key=metric_key), key=lambda row: row[1]
-                ),
-                key=lambda row: row[0],
-            )
-        ]
+        actual_attacks = [attack for attack in ATTACK_NAMES if attack in pivot_df.index]
+        pivot_df = pivot_df.loc[actual_attacks, :].rename(index=ATTACK_NAMES)
 
         # Write to LaTeX
         pivot_df.to_latex(
@@ -203,10 +212,11 @@ def make_barplots(df_results: pd.DataFrame) -> None:
             .agg(
                 avg_success=("success", "mean"),
                 avg_queries=("queries", "mean"),
-                count=("success", "count"),
+                count=("queries", "count"),
             )
             .reset_index()
         )
+
         agg_df.avg_success *= 100
         agg_df = agg_df.rename(
             columns={"campaign": "scenario", "victim_model": "victim"}
@@ -307,6 +317,7 @@ def make_line_plots(df_results: pd.DataFrame) -> None:
                         ax=ax,
                         estimator=None,
                     )
+
                 if not df_agg_oneshot.empty:
                     # Plot the success rate for each attack
                     sns.scatterplot(
