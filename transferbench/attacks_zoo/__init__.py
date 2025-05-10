@@ -4,11 +4,11 @@ from .query_based import (
     BASES,
     DSWEA,
     GAA,
-    GFCS,
+    # GFCS,
     NaiveAvg,
     NaiveAvg1k,
     NaiveAvg10,
-    SimbaODS,
+    # SimbaODS,
 )
 
 __OPTIONAL__ = {
@@ -49,7 +49,7 @@ __all__ = [
     "DSWEA",
     "ENS",
     "GAA",
-    "GFCS",
+    # "GFCS",
     "LGV",
     "MBA",
     "SASD_WS",
@@ -59,5 +59,5 @@ __all__ = [
     "NaiveAvg",
     "NaiveAvg1k",
     "NaiveAvg10",
-    "SimbaODS",
+    # "SimbaODS",
 ]
