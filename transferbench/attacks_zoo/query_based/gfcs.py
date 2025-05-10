@@ -16,6 +16,9 @@ from transferbench.types import CallableModel, TransferAttack
 
 from .utils import grad_projection, hinge_loss, lp_projection
 
+margin_loss = partial(hinge_loss, kappa=float("inf"))
+cross_entropy_loss = partial(torch.nn.functional.cross_entropy, reduction="none")
+
 
 def gfcs(
     victim_model: CallableModel,
@@ -26,6 +29,7 @@ def gfcs(
     eps: float = 0.01,
     p: str | float = 2,
     maximum_queries: int = 500,
+    step_length: float = 2.0,
 ) -> Tensor:
     r"""GFCS attack.
 
@@ -34,13 +38,14 @@ def gfcs(
     best_adv = inputs.clone()
     best_adv_test = inputs.clone()
     grad_projection_p = partial(grad_projection, p=p)
-    step_length: float = Tensor(inputs.shape[2:]).prod() * (1e-3) ** 0.5
     proj_p_nu = partial(lp_projection, eps=eps, p=p)
     margin_loss = partial(hinge_loss, kappa=float("inf"))
+    loss_fn = margin_loss if targets is None else cross_entropy_loss
     best_loss = torch.zeros_like(labels, dtype=torch.float)
+    best_loss.fill_(float("inf") if targets is not None else -float("inf"))
     success = torch.zeros_like(labels, dtype=torch.bool)
     left_surr = torch.zeros_like(labels, dtype=torch.int).fill_(len(surrogate_models))
-    for _ in range(maximum_queries):
+    for _ in range(0, maximum_queries, 2):
         curr_adv = best_adv[~success]
         curr_adv.requires_grad_()
         curr_labels = labels[~success] if targets is None else targets[~success]
@@ -48,7 +53,7 @@ def gfcs(
         if (left_surr > 0).any():
             surrogate = choice(surrogate_models)
             best_adv.requires_grad_()
-            loss = margin_loss(surrogate(curr_adv), curr_labels)
+            loss = loss_fn(surrogate(curr_adv), curr_labels)
             grad = autograd.grad(loss.sum(), curr_adv, create_graph=True)[0]
             direction = grad_projection_p(grad)
 
@@ -56,16 +61,15 @@ def gfcs(
             surrogate = choice(surrogate_models)
             logits = surrogate(curr_adv)
             weights = 2 * torch.rand_like(logits, dtype=torch.float) - 1
-            grad_w = autograd.grad((logits * weights).sum(), curr_adv)
+            grad_w = autograd.grad((logits * weights).sum(), curr_adv)[0]
             direction_ods = grad_projection_p(grad_w)
             ods_sampling = (left_surr <= 0)[~success]
             direction[ods_sampling] = direction_ods[ods_sampling]
         for alpha in {-step_length, step_length}:
             with torch.no_grad():
-                curr_adv_test = curr_adv - direction * alpha
-                best_adv_test[~success] = proj_p_nu(curr_adv_test, inputs[~success])
-                logits = victim_model(best_adv_test, ~success)
-                loss_test = margin_loss(logits, curr_labels)
+                curr_adv_test = curr_adv + direction * alpha
+                best_adv_test[~success] = proj_p_nu(inputs[~success], curr_adv_test)
+                loss_test = loss_fn(victim_model(best_adv_test, ~success), curr_labels)
                 criterion = loss_test[~success] > best_loss[~success]
                 criterion = criterion if targets is None else ~criterion
                 # Update the best adv
@@ -76,14 +80,14 @@ def gfcs(
                     criterion[:, None, None, None],
                     best_adv_test,
                     best_adv[~success],
-                )
+                ).clamp(0, 1)
+                left_surr[criterion] = len(surrogate_models) + 1
                 # Update the success
-                success = best_loss < 0 if targets is None else best_loss > 0
-                left_surr[success] = len(surrogate_models)
+                success = best_loss > 0 if targets is None else best_loss < 0
         left_surr[~success] -= 1
         if success.all():
             break
     return best_adv.detach()
 
 
-GFCS: TransferAttack = gfcs
+GFCS: TransferAttack = partial(gfcs, step_length=2.0)

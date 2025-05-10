@@ -1,6 +1,15 @@
 r"""Attacks zoo."""
 
-from .query_based import BASES, DSWEA, GAA, GFCS, NaiveAvg, NaiveAvg1k, NaiveAvg10
+from .query_based import (
+    BASES,
+    DSWEA,
+    GAA,
+    GFCS,
+    NaiveAvg,
+    NaiveAvg1k,
+    NaiveAvg10,
+    SimbaODS,
+)
 
 __OPTIONAL__ = {
     "AdaEA": "transferbench.attacks_zoo.zero_query.AdaEA",
@@ -40,6 +49,7 @@ __all__ = [
     "DSWEA",
     "ENS",
     "GAA",
+    "GFCS",
     "LGV",
     "MBA",
     "SASD_WS",
@@ -49,4 +59,5 @@ __all__ = [
     "NaiveAvg",
     "NaiveAvg1k",
     "NaiveAvg10",
+    "SimbaODS",
 ]

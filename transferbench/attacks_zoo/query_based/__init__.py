@@ -5,6 +5,7 @@ from .dswea import DSWEA
 from .gaa import GAA
 from .gfcs import GFCS
 from .naive_avg import NaiveAvg, NaiveAvg1k, NaiveAvg10
+from .simba_ods import SimbaODS
 
 __all__ = [
     "BASES",
@@ -14,4 +15,5 @@ __all__ = [
     "NaiveAvg",
     "NaiveAvg1k",
     "NaiveAvg10",
+    "SimbaODS",
 ]
