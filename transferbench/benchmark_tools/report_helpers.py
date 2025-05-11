@@ -224,7 +224,7 @@ def make_barplots(df_results: pd.DataFrame) -> None:
             columns={"campaign": "scenario", "victim_model": "victim"}
         )
         # rename scenarios
-        agg_df["scenario"] = agg_df["scenario"].map(SCENARIO_NAMES)
+        agg_df["scenario"] = agg_df["scenario"].map(PLOT_SCENARIO_NAMES)
         order = (
             agg_df.groupby("attack")["avg_success"]
             .mean()
