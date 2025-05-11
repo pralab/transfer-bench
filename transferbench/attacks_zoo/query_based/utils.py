@@ -1,10 +1,11 @@
 r"""Utility functions for the attacks."""
 
 from collections.abc import Callable
+from random import choice
 from typing import Optional
 
 import torch
-from torch import Tensor, nn
+from torch import Tensor, autograd, nn
 
 
 def hinge_loss(logits: Tensor, labels: Tensor, kappa: int = 200) -> Tensor:
@@ -137,3 +138,40 @@ def projected_gradient_descent(
         with torch.no_grad():
             x = ball_projection(inputs, x - alpha * dot_projection(x.grad))
     return torch.clamp(x, 0, 1)  # , loss
+
+
+class ODSDirection:
+    """Class to generate random directions for the ODS attack."""
+
+    nclasses_: Optional[int] = None
+
+    def update_nclasses(self, nclasses: int) -> None:
+        """Update the number of classes."""
+        self.nclasses_ = nclasses
+
+    @property
+    def nclasses(self) -> int:
+        """Get the number of classes."""
+        return self.nclasses_
+
+    def __call__(
+        self,
+        surrogate_models: list[nn.Module],
+        inputs: Tensor,
+        nclasses: Optional[int] = None,
+    ) -> Tensor:
+        """Generate a random direction for the ODS attack."""
+        surrogate = choice(surrogate_models)
+        if nclasses is not None and self.nclasses is None:
+            self.update_nclasses(nclasses)
+        elif nclasses is None and self.nclasses is None:
+            logits = surrogate(inputs)
+            self.update_nclasses(logits.shape[-1])
+            weights = 2 * torch.rand_like(logits, dtype=torch.float) - 1
+            grad_w = autograd.grad((logits * weights).sum(), inputs)[0]
+            return grad_w / torch.norm(grad_w, p=2, dim=(1, 2, 3), keepdim=True)
+
+        batch_size = inputs.shape[0]
+        weights = 2 * torch.rand(batch_size, self.nclasses, device=inputs.device) - 1
+        grad_w = autograd.grad((surrogate(inputs) * weights).sum(), inputs)[0]
+        return grad_w / torch.norm(grad_w, p=2, dim=(1, 2, 3), keepdim=True)

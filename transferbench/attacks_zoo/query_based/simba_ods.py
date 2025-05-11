@@ -1,18 +1,18 @@
 r"""SimBA attack implementation with ODS.
 
-The code is adapted from the repo `https://github.com/ermongroup/ODS.git`
+The code is batch version adapted from the repo `https://github.com/ermongroup/ODS.git`
 """
 
+from dataclasses import dataclass
 from functools import partial
-from random import choice
 from typing import Optional
 
 import torch
-from torch import Tensor, autograd, nn
+from torch import Tensor, nn
 
 from transferbench.types import CallableModel, TransferAttack
 
-from .utils import grad_projection, hinge_loss, lp_projection
+from .utils import ODSDirection, grad_projection, hinge_loss, lp_projection
 
 margin_loss = partial(hinge_loss, kappa=float("inf"))
 cross_entropy_loss = partial(torch.nn.functional.cross_entropy, reduction="none")
@@ -34,46 +34,59 @@ def simba_ods(
     Batched version of the attack as describeed in the original paper.
     """
     best_adv = inputs.clone()
-    best_adv_test = inputs.clone()
+    test_adv = inputs.clone()
+    # partial functions for projection and direction
     grad_projection_p = partial(grad_projection, p=p)
-    proj_p_nu = partial(lp_projection, eps=eps, p=p)
-    margin_loss = partial(hinge_loss, kappa=float("inf"))
+    proj_p_eps = partial(lp_projection, eps=eps, p=p)
     loss_fn = margin_loss if targets is None else cross_entropy_loss
+    get_ods_direction = ODSDirection()
+    # Initialize the losses and adv
     best_loss = torch.zeros_like(labels, dtype=torch.float)
     best_loss.fill_(float("inf") if targets is not None else -float("inf"))
     success = torch.zeros_like(labels, dtype=torch.bool)
+    all_curr_labels = labels if targets is None else targets
     for _ in range(0, maximum_queries, 2):
         curr_adv = best_adv[~success]
         curr_adv.requires_grad_()
-        curr_labels = labels[~success] if targets is None else targets[~success]
-
-        # Get a random surrogate model direction
-        surrogate = choice(surrogate_models)
-        logits = surrogate(curr_adv)
-        weights = 2 * torch.rand_like(logits, dtype=torch.float) - 1
-        grad_w = autograd.grad((logits * weights).sum(), curr_adv)[0]
-        direction = grad_projection_p(grad_w)
+        directions = get_ods_direction(surrogate_models, curr_adv)
+        prev_best = torch.zeros_like(all_curr_labels, dtype=torch.bool)
         for alpha in {-step_length, step_length}:
             with torch.no_grad():
-                curr_adv_test = curr_adv + direction * alpha
-                best_adv_test[~success] = proj_p_nu(inputs[~success], curr_adv_test)
-                loss_test = loss_fn(victim_model(best_adv_test, ~success), curr_labels)
-                criterion = loss_test[~success] > best_loss[~success]
+                mask = ~success & ~prev_best
+                loc_test = curr_adv + grad_projection_p(directions) * alpha
+                test_adv[mask] = loc_test[~prev_best[~success]]
+                test_adv[mask] = proj_p_eps(inputs[mask], test_adv[mask])
+                # Query the victim model
+                logits = victim_model(test_adv, mask)
+                loss_test = loss_fn(logits, all_curr_labels)
+                criterion = loss_test[mask] > best_loss[mask]
                 criterion = criterion if targets is None else ~criterion
                 # Update the best adv
-                best_loss[~success] = torch.where(
-                    criterion, loss_test, best_loss[~success]
+                best_loss[mask] = torch.where(
+                    criterion,
+                    loss_test[mask],
+                    best_loss[mask],
                 )
-                best_adv[~success] = torch.where(
+                best_adv[mask] = torch.where(
                     criterion[:, None, None, None],
-                    best_adv_test,
-                    best_adv[~success],
+                    test_adv[mask],
+                    best_adv[mask],
                 ).clamp(0, 1)
-                # Update the success
-                success = best_loss > 0 if targets is None else best_loss < 0
+                prev_best[mask] = criterion
+
+        # Update the success
+        preds = logits.argmax(dim=-1)
+        success = preds != labels if targets is None else preds == targets
         if success.all():
             break
     return best_adv.detach()
 
 
-SimbaODS: TransferAttack = partial(simba_ods, step_length=2.0)
+@dataclass
+class SimbODSHyperParams:
+    r"""Hyperparameters for the SimBA ODS attack."""
+
+    step_length: float = 2.0
+
+
+SimbaODS: TransferAttack = partial(simba_ods, **vars(SimbODSHyperParams()))
