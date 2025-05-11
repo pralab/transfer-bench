@@ -44,7 +44,7 @@ def collect_runs() -> pd.DataFrame:
         indicator=True,
     )
     df_runs = df_runs.rename(columns={"_merge": "available"})
-    df_runs.available = df_runs.available.replace(
+    df_runs.available = df_runs.available.map(
         {"left_only": True, "right_only": False, "both": True}
     )
     df_runs.status = df_runs.status.fillna("missing")
