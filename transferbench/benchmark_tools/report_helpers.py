@@ -15,35 +15,40 @@ from .wandb_helpers import WandbReader
 
 MODEL_NAMES = {
     "resnext101_32x8d": "\\resnext{101}",
-    "imagenet_resnet50_pubdef": "\\pubdef",
     "vgg19": "\\vgg{19}",
-    "Amini2024MeanSparse_Swin-L": "\\amini",
     "vit_b_16": "\\vit{16}",
+    "imagenet_resnet50_pubdef": "\\pubdef",
+    "Amini2024MeanSparse_Swin-L": "\\amini",
     "Xu2024MIMIR_Swin-L": "\\mimir",
-    "cifar10_vgg19_bn": "\\vgg{19-bn}",
     "cifar10_resnet56": "\\resnet{56}",
+    "cifar10_vgg19_bn": "\\vgg{19-bn}",
     "cifar10_vit_b16": "\\vit{16}",
     "cifar10_beit_b16": "\\beit{16}",
     "Peng2023Robust": "\\peng",
     "Bartoldson2024Adversarial_WRN-94-16": "\\bartold",
 }
 PLOT_MODEL_NAMES = {
-    "resnext101_32x8d": "resnext101",
-    "imagenet_resnet50_pubdef": "pubdef-resnet-50",
-    "vgg19": "vgg-19",
-    "Amini2024MeanSparse_Swin-L": "Amini-Swin-L",
-    "vit_b_16": "vit-16/b",
-    "Xu2024MIMIR_Swin-L": "Mimir-Swin-L",
-    "cifar10_vgg19_bn": "vgg-19-bn",
-    "cifar10_resnet56": "resnet-56",
-    "cifar10_vit_b16": "Vit-16/t",
-    "cifar10_beit_b16": "BeIT-16/b",
-    "Peng2023Robust": "Peng2023Robust",
-    "Bartoldson2024Adversarial_WRN-94-16": "Barto-WRN-94-16",
+    "resnext101_32x8d": "ResNeXt101",
+    "imagenet_resnet50_pubdef": "Pub-RN-50",
+    "vgg19": "VGG-19",
+    "Amini2024MeanSparse_Swin-L": "Amini-Sw-L",
+    "vit_b_16": "ViT-B/16",
+    "Xu2024MIMIR_Swin-L": "Mim-Sw-L",
+    "cifar10_vgg19_bn": "VGG-19-bn",
+    "cifar10_resnet56": "ResNet-56",
+    "cifar10_vit_b16": "ViT-B/16",
+    "cifar10_beit_b16": "BeIT-B/16",
+    "Peng2023Robust": "Peng-RW-RN-70",
+    "Bartoldson2024Adversarial_WRN-94-16": "Barto-WRN-94",
 }
 METRIC_NAME = {"avg_success": "ASR", "avg_queries": "$\\bar q$"}
 SCENARIO_NAMES = {"omeo": "\\omeo", "etero": "\\etero", "robust": "\\robust"}
-ATTACK_NAMES = {
+PLOT_SCENARIO_NAMES = {
+    "omeo": "HoS",
+    "etero": "HeS",
+    "robust": "RHoS",
+}
+ATTACK_NAMES = {  # TODO(@fabio): move to config # https://github.com/your-repo/issues/10
     "BASES": "BASES",
     "DSWEA": "DSWEA",
     "GAA": "GAA",
@@ -65,7 +70,9 @@ def collect_results(download: bool) -> list[dict]:
         run_ids (list[str]): List of run ids to collect results from.
         download (bool): Whether to download the results or not. Defaults to False.
     """
-    df_runs = get_filtered_runs("finished", 'campaign != "debug"')
+    df_runs = get_filtered_runs(
+        "finished", f'campaign != "debug" and attack in {list(ATTACK_NAMES.keys())}'
+    )
     # Get the run ids
     run_ids = df_runs["id"].tolist()
     # Initialize the WandbReader
@@ -125,23 +132,17 @@ def make_tabulars(df_results: pd.DataFrame) -> list[pd.DataFrame]:
 
     for dataset in datasets:
         df_loc = df_results[df_results["dataset"] == dataset]
-        # filter out unwanted campaigns
-        df_loc = df_loc[df_loc["campaign"].isin(SCENARIO_NAMES.keys())]
-        # Filter unwnanted attacks
-        df_loc = df_loc[df_loc["attack"].isin(ATTACK_NAMES.keys())]
         # Replace queries with nan when success is 0
         df_loc.loc[df_loc["success"] == 0, "queries"] = float("nan")
 
-        agg_df = (
-            df_loc.groupby(["attack", "campaign", "victim_model"])
-            .agg(
-                avg_success=("success", "mean"),
-                avg_queries=("queries", "mean"),
-                count=("success", "count"),
-            )
-            .reset_index()
+        agg_df = df_loc.groupby(["attack", "campaign", "victim_model"]).agg(
+            avg_success=("success", "mean"),
+            avg_queries=("queries", "mean"),
+            count=("success", "count"),
         )
-
+        # Set queries to -1 when success is 0
+        agg_df.loc[agg_df["avg_success"] == 0, "avg_queries"] = -1
+        agg_df = agg_df.reset_index()
         agg_df.avg_success *= 100
         agg_df: pd.DataFrame = agg_df.rename(
             columns={"campaign": "scenario", "victim_model": "victim"}
@@ -151,8 +152,10 @@ def make_tabulars(df_results: pd.DataFrame) -> list[pd.DataFrame]:
             index="attack",
             columns=["scenario", "victim"],
             values=["avg_success", "avg_queries"],
-            dropna=False,
         )
+
+        # replace -1 with nan
+        pivot_df = pivot_df.replace(-1, float("nan"))
 
         # Rearrange the columns
 
@@ -191,7 +194,7 @@ def make_tabulars(df_results: pd.DataFrame) -> list[pd.DataFrame]:
             caption=f"Results for {dataset}",
             label=f"tab:{dataset}",
             float_format="%.1f",
-            column_format="l" + "|cc" * (len(pivot_df.columns) // 2) + "|",
+            column_format="l" + "|cc" * (len(pivot_df.columns) // 2),
             multicolumn_format="c",
             na_rep="-",
             escape=False,  # Important: allows LaTeX commands to be rendered properly
@@ -204,7 +207,6 @@ def make_tabulars(df_results: pd.DataFrame) -> list[pd.DataFrame]:
 def make_barplots(df_results: pd.DataFrame) -> None:
     for dataset in df_results["dataset"].unique():
         df_loc = df_results[df_results["dataset"] == dataset]
-        df_loc = df_loc[df_loc["campaign"].isin(SCENARIO_NAMES.keys())]
         # Replace queries with nan when success is 0
         df_loc.loc[df_loc["success"] == 0, "queries"] = float("nan")
         agg_df = (
@@ -221,13 +223,14 @@ def make_barplots(df_results: pd.DataFrame) -> None:
         agg_df = agg_df.rename(
             columns={"campaign": "scenario", "victim_model": "victim"}
         )
+        # rename scenarios
+        agg_df["scenario"] = agg_df["scenario"].map(SCENARIO_NAMES)
         order = (
             agg_df.groupby("attack")["avg_success"]
             .mean()
             .sort_values(ascending=False)
             .index
         )
-        print(order)
         plt.figure(figsize=(10, 3.5))
         sns.barplot(
             data=agg_df,
@@ -237,7 +240,7 @@ def make_barplots(df_results: pd.DataFrame) -> None:
             hue="scenario",
             hue_order=SCENARIO_NAMES.keys(),
             palette="Set2",
-            errorbar="se",
+            errorbar="pi",
         )
 
         plt.title(f"Success Rate for {dataset}")
@@ -330,10 +333,7 @@ def make_line_plots(df_results: pd.DataFrame) -> None:
                     )
                 if victim is not None:
                     plt_name = (
-                        PLOT_MODEL_NAMES[victim]
-                        + " on "
-                        + scenario.capitalize()
-                        + "Pool"
+                        f"{PLOT_MODEL_NAMES[victim]} ({PLOT_SCENARIO_NAMES[scenario]})"
                     )
                     ax.set_title(plt_name)
                     ax.set_xlabel("Queries")
