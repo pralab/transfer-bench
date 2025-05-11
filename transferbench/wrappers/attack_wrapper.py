@@ -76,8 +76,8 @@ class AttackWrapper:
 
     def check_queries(self) -> None:
         r"""Check that the maximum number of queries has not been exceeded."""
-        forwards = self.victim_model.counter.get_forwards()
-        assert forwards <= self.hp.maximum_queries, "Query budget exceeded."
+        queries = self.victim_model.counter.get_queries()
+        assert (queries <= self.hp.maximum_queries).all(), "Query budget exceeded."
 
     def check_black_box(self) -> None:
         r"""Check if the gradient of the victim has been used."""
