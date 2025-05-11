@@ -1,7 +1,7 @@
 
 "gfcs":
   - hp:
-      maximum_queries: 100
+      maximum_queries: 200
       p: 2
       eps: 12.26898 # (0.001*224*224*3)**0.5
     victim_model: "vgg16"
