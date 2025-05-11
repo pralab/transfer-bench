@@ -214,7 +214,6 @@ def make_barplots(df_results: pd.DataFrame) -> None:
             .agg(
                 avg_success=("success", "mean"),
                 avg_queries=("queries", "mean"),
-                count=("queries", "count"),
             )
             .reset_index()
         )
@@ -238,9 +237,9 @@ def make_barplots(df_results: pd.DataFrame) -> None:
             y="avg_success",
             order=order,
             hue="scenario",
-            hue_order=SCENARIO_NAMES.keys(),
+            hue_order=PLOT_SCENARIO_NAMES.values(),
             palette="Set2",
-            errorbar="pi",
+            errorbar=("pi", 50),
         )
 
         plt.title(f"Success Rate for {dataset}")
