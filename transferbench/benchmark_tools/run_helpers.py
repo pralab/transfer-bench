@@ -164,6 +164,10 @@ def run_single_scenario(
             )
         # Save final results to wandb
         w.upload_table(df_results)
+        w.log(
+            asr=df_results["success"].mean(),
+            avg_q=df_results[df_results.success == 1]["queries"].mean(),
+        )
     return df_results
 
 
