@@ -162,6 +162,10 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+# Diretocries
 data/
 report/
 tmp/
+
+# VS Code
+.DS_Store
