@@ -1,7 +1,7 @@
 r"""Report helpers for transferbench."""
 
 import json
-from collections import defaultdict
+from collections import OrderedDict, defaultdict
 from itertools import zip_longest
 from pathlib import Path
 
@@ -48,10 +48,12 @@ PLOT_SCENARIO_NAMES = {
     "etero": "HeS",
     "robust": "RHoS",
 }
-ATTACK_NAMES = {  # TODO(@fabio): move to config # https://github.com/your-repo/issues/10
+ATTACK_NAMES = {  # TODO(@fabio): move to config # https://github.com/your-repo/issues/future-issue
     "BASES": "BASES",
     "DSWEA": "DSWEA",
     "GAA": "GAA",
+    "SimbaODS": "SimbaODS",
+    "GFCS": "GFCS",
     "NaiveAvg": "NaiveAvg",
     "NaiveAvg10": "NaiveAvg10",
     "ENS": "ENS",
@@ -242,15 +244,15 @@ def make_barplots(df_results: pd.DataFrame) -> None:
             errorbar=("pi", 50),
         )
 
-        plt.title(f"Success Rate for {dataset}")
-        plt.xlabel("Attack")
-        plt.ylabel("Success Rate (%)")
-        plt.xticks(rotation=45)
+        plt.title(f"Attack Success Rate for {dataset}")
+        plt.ylabel("Attack Success Rate [%]")
+        plt.xlabel("")
+        plt.xticks(rotation=15)
         plt.legend(title="Scenario")
         # add grid
         plt.grid(axis="y", linestyle="--", alpha=0.7)
         plt.tight_layout()
-        plot_path = Path(cfg.report_root) / f"barplot_{dataset}.png"
+        plot_path = Path(cfg.report_root) / f"barplot_{dataset}.pdf"
         plot_path.parent.mkdir(parents=True, exist_ok=True)
         plt.savefig(plot_path, bbox_inches="tight")
         plt.clf()
@@ -287,9 +289,11 @@ def make_line_plots(df_results: pd.DataFrame) -> None:
             fig, axes = plt.subplots(
                 1,
                 len(row),
-                figsize=(4 * len(row), 3),
+                figsize=(4 * len(row), 3.2),
                 sharey=True,
             )
+            all_handles = []
+            all_labels = []
             for ax, scenario, victim in zip(axes, SCENARIO_NAMES, row, strict=False):
                 df_scen_vict = df_loc[df_loc["campaign"] == scenario]
                 df_scen_vict = df_scen_vict[df_scen_vict["victim_model"] == victim]
@@ -305,7 +309,8 @@ def make_line_plots(df_results: pd.DataFrame) -> None:
                     success=("success", "max"), queries=("queries", "mean")
                 )
                 df_nquery = df_scen_vict[df_scen_vict["queries"] > 0]
-                legend = scenario == "robust"
+                hue_order = ATTACK_NAMES.keys()
+                palette = sns.color_palette("tab10", len(hue_order))
                 if not df_nquery.empty:
                     # Plot the success rate for each attack
                     sns.lineplot(
@@ -313,9 +318,10 @@ def make_line_plots(df_results: pd.DataFrame) -> None:
                         x="queries",
                         y="success",
                         hue="attack",
+                        hue_order=hue_order,
+                        palette=palette,
                         markers=True,
                         dashes=False,
-                        legend=legend,
                         ax=ax,
                         estimator=None,
                     )
@@ -327,7 +333,6 @@ def make_line_plots(df_results: pd.DataFrame) -> None:
                         x="queries",
                         y="success",
                         style="attack",
-                        legend=legend,
                         ax=ax,
                     )
                 if victim is not None:
@@ -338,12 +343,25 @@ def make_line_plots(df_results: pd.DataFrame) -> None:
                     ax.set_xlabel("Queries")
                     ax.set_ylabel("Attack Success Rate [%]")
                     ax.set_xscale("symlog", base=2)
-                if legend:
-                    ax.legend(loc="upper left", bbox_to_anchor=(1, 1))
-                ax.grid(axis="y", linestyle="--", alpha=0.7)
-            plt.suptitle(f"ASR and queries-per-success on {dataset}", fontsize=16)
+                    ax.grid(axis="y", linestyle="--", alpha=0.7)
+
+                handles, labels = ax.get_legend_handles_labels()
+                all_handles.extend(handles)
+                all_labels.extend(labels)
+            # Remove duplicate handles and labels
+            handles_by_labels = OrderedDict(zip(all_labels, all_handles, strict=False))
+            [ax.get_legend().remove() for ax in axes if ax.get_legend() is not None]
+            # Add a legend to the last subplot
+
+            axes[-1].legend(
+                handles_by_labels.values(),
+                handles_by_labels.keys(),
+                title="Attacks",
+                loc="center left",
+                bbox_to_anchor=(1, 0.5),
+            )
             plt.tight_layout()
-            plot_path = Path(cfg.report_root) / f"plot_{dataset}_{row[0]}.png"
+            plot_path = Path(cfg.report_root) / f"plot_{dataset}_{row[0]}.pdf"
             plot_path.parent.mkdir(parents=True, exist_ok=True)
             plt.savefig(plot_path, bbox_inches="tight")
             plt.clf()
