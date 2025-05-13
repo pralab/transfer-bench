@@ -9,6 +9,7 @@ from .query_based import (
     NaiveAvg1k,
     NaiveAvg10,
     SimbaODS,
+    SubSpace,
 )
 
 __OPTIONAL__ = {
@@ -60,4 +61,5 @@ __all__ = [
     "NaiveAvg1k",
     "NaiveAvg10",
     "SimbaODS",
+    "SubSpace",
 ]

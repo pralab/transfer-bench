@@ -6,6 +6,7 @@ from .gaa import GAA
 from .gfcs import GFCS
 from .naive_avg import NaiveAvg, NaiveAvg1k, NaiveAvg10
 from .simba_ods import SimbaODS
+from .subspace import SubSpace
 
 __all__ = [
     "BASES",
@@ -16,4 +17,5 @@ __all__ = [
     "NaiveAvg1k",
     "NaiveAvg10",
     "SimbaODS",
+    "SubSpace",
 ]

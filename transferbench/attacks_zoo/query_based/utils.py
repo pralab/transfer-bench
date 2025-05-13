@@ -110,7 +110,7 @@ def grad_projection(g: Tensor, p: float | str) -> Tensor:
 
 
 def lp_projection(x: Tensor, adv: Tensor, eps: float, p: float | str) -> Tensor:
-    r"""Return the projection of x on the lp ball."""
+    r"""Return the projection of adv on the lp ball centered in x."""
     if float(p) == float("inf"):
         return torch.clamp(adv - x, -eps, eps) + x
     if float(p) == 1:
