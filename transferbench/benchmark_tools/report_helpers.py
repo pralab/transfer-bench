@@ -28,7 +28,7 @@ MODEL_NAMES = {
     "Bartoldson2024Adversarial_WRN-94-16": "\\bartold",
 }
 PLOT_MODEL_NAMES = {
-    "resnext101_32x8d": "ResNeXt101",
+    "resnext101_32x8d": "ResNeXt-101",
     "imagenet_resnet50_pubdef": "Pub-RN-50",
     "vgg19": "VGG-19",
     "Amini2024MeanSparse_Swin-L": "Amini-Sw-L",
@@ -46,23 +46,42 @@ SCENARIO_NAMES = {"omeo": "\\omeo", "etero": "\\etero", "robust": "\\robust"}
 PLOT_SCENARIO_NAMES = {
     "omeo": "HoS",
     "etero": "HeS",
-    "robust": "RHoS",
+    "robust": "HoS+R",
 }
-ATTACK_NAMES = {  # TODO(@fabio): move to config # https://github.com/your-repo/issues/future-issue
-    "BASES": "BASES",
-    "DSWEA": "DSWEA",
-    "GAA": "GAA",
-    "SimbaODS": "SimbaODS",
-    "GFCS": "GFCS",
-    "NaiveAvg": "NaiveAvg",
-    "NaiveAvg10": "NaiveAvg10",
-    "ENS": "ENS",
-    "CWA": "CWA",
-    "LGV": "LGV",
-    "MBA": "MBA",
-    "SASD_WS": "SASD\\_WS",
-    "SVRE": "SVRE",
-}
+ATTACK_NAMES = OrderedDict(
+    {  # TODO(@fabio): move to config # https://github.com/your-repo/issues/future-issue
+        "BASES": "BASES",
+        "DSWEA": "DSWEA",
+        "GAA": "GAA",
+        "GFCS": "GFCS",
+        "SimbaODS": "SimbaODS",
+        "NaiveAvg10": "NaiveAvg10",
+        "NaiveAvg": "NaiveAvg100",
+        "ENS": "ENS",
+        "CWA": "CWA",
+        "LGV": "LGV",
+        "MBA": "MBA",
+        "SASD_WS": "SASD\\_WS",
+        "SVRE": "SVRE",
+    }
+)
+PLOT_ATTACK_NAMES = OrderedDict(
+    {  # TODO(@fabio): move to config # https://github.com/your-repo/issues/future-issue
+        "BASES": "BASES",
+        "DSWEA": "DSWEA",
+        "GAA": "GAA",
+        "GFCS": "GFCS",
+        "SimbaODS": "SimbaODS",
+        "NaiveAvg10": "NaiveAvg10",
+        "NaiveAvg": "NaiveAvg100",
+        "ENS": "ENS",
+        "CWA": "CWA",
+        "LGV": "LGV",
+        "MBA": "MBA",
+        "SASD_WS": "SASD_WS",
+        "SVRE": "SVRE",
+    }
+)
 
 
 def collect_results(download: bool) -> list[dict]:
@@ -226,6 +245,8 @@ def make_barplots(df_results: pd.DataFrame) -> None:
         )
         # rename scenarios
         agg_df["scenario"] = agg_df["scenario"].map(PLOT_SCENARIO_NAMES)
+        # rename attacks
+        agg_df["attack"] = agg_df["attack"].map(PLOT_ATTACK_NAMES)
         order = (
             agg_df.groupby("attack")["avg_success"]
             .mean()
@@ -258,7 +279,7 @@ def make_barplots(df_results: pd.DataFrame) -> None:
         plt.clf()
 
 
-def make_line_plots(df_results: pd.DataFrame) -> None:
+def make_line_plots(df_results: pd.DataFrame, add_oneshot: bool = False) -> None:
     r"""Make side-by-side plots (one per scenario) from the results.
 
     Args:
@@ -266,6 +287,8 @@ def make_line_plots(df_results: pd.DataFrame) -> None:
     """
     for dataset in df_results["dataset"].unique():
         df_loc = df_results[df_results["dataset"] == dataset]
+        if not add_oneshot:
+            df_loc = df_loc[df_loc["queries"] > 0]
         df_sel = df_loc[["campaign", "victim_model"]].drop_duplicates()
         df_sel = sorted(
             df_sel.to_numpy(), key=lambda x: list(SCENARIO_NAMES.keys()).index(x[0])
@@ -283,13 +306,21 @@ def make_line_plots(df_results: pd.DataFrame) -> None:
         rows = list(
             zip_longest(*(buckets[scn] for scn in SCENARIO_NAMES), fillvalue=None)
         )
+        # Rename the attacks
+        df_loc["attack"] = df_loc["attack"].map(PLOT_ATTACK_NAMES)
+        hue_order = [
+            attack
+            for attack in PLOT_ATTACK_NAMES.values()
+            if attack in df_loc["attack"].unique()
+        ][::-1]
+        palette = sns.color_palette("tab10", len(hue_order))
 
         for row in rows:
             # Set up subplots
             fig, axes = plt.subplots(
                 1,
                 len(row),
-                figsize=(4 * len(row), 3.2),
+                figsize=(4 * len(row), 3),
                 sharey=True,
             )
             all_handles = []
@@ -309,8 +340,6 @@ def make_line_plots(df_results: pd.DataFrame) -> None:
                     success=("success", "max"), queries=("queries", "mean")
                 )
                 df_nquery = df_scen_vict[df_scen_vict["queries"] > 0]
-                hue_order = ATTACK_NAMES.keys()
-                palette = sns.color_palette("tab10", len(hue_order))
                 if not df_nquery.empty:
                     # Plot the success rate for each attack
                     sns.lineplot(
@@ -342,7 +371,8 @@ def make_line_plots(df_results: pd.DataFrame) -> None:
                     ax.set_title(plt_name)
                     ax.set_xlabel("Queries")
                     ax.set_ylabel("Attack Success Rate [%]")
-                    ax.set_xscale("symlog", base=2)
+                    ax.set_xscale("log", base=2)
+
                     ax.grid(axis="y", linestyle="--", alpha=0.7)
 
                 handles, labels = ax.get_legend_handles_labels()
