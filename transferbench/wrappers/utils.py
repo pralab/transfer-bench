@@ -21,7 +21,7 @@ def lp_constraint(inputs: Tensor, adv: Tensor, eps: float, p: float | str) -> bo
     - p (float | str): The norm to be used.
 
     """
-    box_constraints = torch.all(inputs >= 0) and torch.all(inputs <= 1)
+    box_constraints = torch.all(adv >= 0) and torch.all(adv <= 1)
     lp_norms = torch.all(
         torch.linalg.vector_norm(inputs - adv, float(p), dim=(1, 2, 3)) <= eps + 1e-7
     )

@@ -111,7 +111,7 @@ class AttackWrapper:
             targets,
             **vars(self.hp),
         )
-        self.check_constraints(adv, inputs)
+        self.check_constraints(inputs, adv)
         self.check_queries()
         queries = self.victim_model.counter.get_queries().clone()
         preds, logits, success = self.evaluate_success(adv, labels, targets)
