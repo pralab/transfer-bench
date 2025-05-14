@@ -262,8 +262,8 @@ def make_json_summary(df_results: pd.DataFrame) -> dict:
 
         for _, row in agg_df.iterrows():
             attack_name = row["attack"]
-            scenario = SCENARIO_NAMES.get(row["scenario"], row["scenario"])
-            victim = MODEL_NAMES.get(row["victim"], row["victim"])
+            scenario = PLOT_SCENARIO_NAMES.get(row["scenario"], row["scenario"])
+            victim = PLOT_MODEL_NAMES.get(row["victim"], row["victim"])
             asr = float(row["avg_success"])
             queries = None if pd.isna(row["avg_queries"]) else int(row["avg_queries"])
 
