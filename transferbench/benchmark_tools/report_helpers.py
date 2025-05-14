@@ -225,6 +225,64 @@ def make_tabulars(df_results: pd.DataFrame) -> list[pd.DataFrame]:
     return tabulars
 
 
+def make_json_summary(df_results: pd.DataFrame) -> dict:
+    r"""Generate a nested JSON summary from the evaluation results.
+
+    Args:
+        df_results (pd.DataFrame): DataFrame with the results.
+
+    Returns:
+        dict: Nested dictionary in the desired JSON structure.
+    """
+    datasets = df_results["dataset"].unique()
+    json_output = {}
+
+    for dataset in datasets:
+        df_loc = df_results[df_results["dataset"] == dataset]
+        df_loc = df_loc[df_loc["campaign"].isin(SCENARIO_NAMES.keys())]
+        df_loc.loc[df_loc["success"] == 0, "queries"] = float("nan")
+
+        agg_df = (
+            df_loc.groupby(["attack", "campaign", "victim_model"])
+            .agg(
+                avg_success=("success", "mean"),
+                avg_queries=("queries", "mean"),
+            )
+            .reset_index()
+        )
+        agg_df.avg_success = agg_df.avg_success.round(4)
+        agg_df.avg_queries = agg_df.avg_queries.round(0).astype("Int64")  # handle NaNs
+
+        agg_df = agg_df.rename(
+            columns={"campaign": "scenario", "victim_model": "victim"}
+        )
+
+        # Create nested structure: dataset -> victim -> scenario -> [entries]
+        nested_dict = {}
+
+        for _, row in agg_df.iterrows():
+            attack_name = row["attack"]
+            scenario = SCENARIO_NAMES.get(row["scenario"], row["scenario"])
+            victim = MODEL_NAMES.get(row["victim"], row["victim"])
+            asr = float(row["avg_success"])
+            queries = None if pd.isna(row["avg_queries"]) else int(row["avg_queries"])
+
+            nested_dict.setdefault(victim, {}).setdefault(scenario, []).append({
+                "attack_name": attack_name,
+                "ASR": asr,
+                "queries": queries
+            })
+
+        json_output[dataset] = nested_dict
+
+    output_path = Path(cfg.report_root) / "data.json"
+    output_path.parent.mkdir(parents=True, exist_ok=True)  # Ensure directory exists
+
+    with open(output_path, "w") as f:
+        json.dump(json_output, f, indent=2)
+    return json_output
+
+
 def make_barplots(df_results: pd.DataFrame) -> None:
     for dataset in df_results["dataset"].unique():
         df_loc = df_results[df_results["dataset"] == dataset]
