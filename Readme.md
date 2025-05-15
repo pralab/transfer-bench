@@ -124,5 +124,5 @@ Implemented attacks, all the implementation allows batch-wise computation.
 
 ## License 📜
 
-TransferBench is released under the MIT License. See the [LICENSE](LICENSE.md) file for full details.
+TransferBench is released under the MIT License. See the [LICENSE](LICENSE) file for full details.
 
