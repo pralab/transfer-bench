@@ -122,7 +122,6 @@ Implemented attacks, all the implementation allows batch-wise computation.
 
 *Under revision for NeurIPS 2025 Datasets and Benchmarks TrackPaper*
 
-TL;DR: TransferBench reveals limitations in surrogate model choices, robustness generalization, and query efficiency.
 ## License 📜
 
 TransferBench is released under the MIT License. See the [LICENSE](LICENSE.md) file for full details.
