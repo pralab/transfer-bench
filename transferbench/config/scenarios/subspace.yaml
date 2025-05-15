@@ -2,7 +2,7 @@ subspace:
   - hp:
       eps: 0.05
       p: "inf"
-      maximum_queries: 50 # Actual maximum queries is 50k infeasible
+      maximum_queries: 50000
     victim_model: inception_v3
     surrogate_models: [resnet18, resnet34, resnet50]
     dataset : ImageNetT
