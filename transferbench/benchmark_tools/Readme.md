@@ -56,7 +56,7 @@ trbench display all --query 'surrogate == "NaiveAvg" and campaign == "omeo"'
 Run `trbench display --help` to get more infos, other options include `running, failed, crashed`.
 
 
-## 🚀 Case 2: Lounching Jobs Using query-matching criterion
+## 🚀 Case 2: Running evaluations using query-matching criterion
 
 The command line allows to run the evaluations and store the results both in local and in the weight and biases project. The default directory is the `results` directory in the same path where the cli-command has been executed. This can be modified with the `config` subcommand.
 
