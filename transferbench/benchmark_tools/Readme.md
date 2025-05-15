@@ -70,7 +70,7 @@ The script will automatically filter out completed jobs and only re-run those wi
 
 ![Watch Case 2 Demo](../../examples/demos/demo_running_batch.gif)
 
-*N.B* To re-run a previously run job you must use the flat `--overwrite`, be careful.
+*N.B* If you run a not finished job, the script will resume the last completed batch. To overwrite all the batches, starting the evaluation from scratch you you must use the flat `--overwrite`, be careful.
 
 
 
