@@ -32,7 +32,7 @@ class AttackEval:
         - attack (str | TransferAttack): The attack step.
         """
         self.transfer_attack = transfer_attack
-        self.set_scenarios("etero-imagenet-inf")
+        self.set_scenarios("omeo-imagenet-inf")
 
     def set_scenarios(self, *scenarios: str | AttackScenario) -> None:
         r"""Set the scenarios to be evaluated."""
