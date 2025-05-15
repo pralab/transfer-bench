@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "transferbench"
-version = "0.1.0"
+version = "1.0.0"
 description = "A Python package for benchmarking transfer-black-box attacks."
 authors = [
     { name = "Fabio Brau", email = "fabio.brau@unica.it" },
     { name = "Antonio Cinà", email = "antonio.cina@unige.it" },
     { name = "Maura Pintor", email = "maura.pintor@unica.it" },
 ]
-license = "MIT"
+license = "CC BY-NC-ND 4.0"
 readme = "Readme.md"
 requires-python = ">=3.7"
 classifiers = [
