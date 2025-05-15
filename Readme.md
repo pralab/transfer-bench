@@ -96,5 +96,5 @@ We welcome contributions! To contribute to the `attacks_zoo` or other components
 
 ## License 📜
 
-TransferBench is released under the MIT License. See the [LICENSE](LICENSE) file for full details.
+TransferBench is released under the MIT License. See the [LICENSE](LICENSE.md) file for full details.
 
