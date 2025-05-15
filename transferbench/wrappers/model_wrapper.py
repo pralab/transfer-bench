@@ -57,7 +57,7 @@ class SampleWiseCounter:
     def get_forwards(self) -> int:  # noqa: D102
         return self.forwarded_batches
 
-    def get_queries(self) -> int:  # noqa: D102
+    def get_queries(self) -> Tensor:  # noqa: D102
         return self.forwarded_samples
 
     def get_backwards(self) -> int:  # noqa: D102

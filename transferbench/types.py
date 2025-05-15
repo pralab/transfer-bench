@@ -84,15 +84,6 @@ class HyperParameters:
 
 
 @dataclass
-class TransferScenario:
-    r"""Define the scenario for evaluating the transferability metric."""
-
-    hp: HyperParameters
-    transfer_attack: str | TransferAttack
-    dataset: str | Dataset
-
-
-@dataclass
 class AttackScenario:
     r"""Define the scenario for evaluaring the transferability metric."""
 
