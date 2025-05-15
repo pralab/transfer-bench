@@ -50,7 +50,7 @@ class AttackEval:
         )
 
     def run(
-        self, batch_size: int = 128, device: torch.device = "cuda"
+        self, batch_size: int = 4, device: torch.device = "cuda"
     ) -> list[EvaluationResult]:
         r"""Run the evaluation."""
         results = []
