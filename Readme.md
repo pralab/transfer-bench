@@ -1,4 +1,4 @@
-# TransferBench 🚀
+# TransferBench 〶
 
 TransferBench is a Python package designed for evaluating black-box transfer attacks using one or more surrogate models. It provides a flexible and streamlined interface for testing attack effectiveness across a variety of scenarios involving different victim models, surrogate models, and datasets. Optional robust victim models are also supported.
 
@@ -90,7 +90,7 @@ Other included scenarios:
 - `robust-cifar10-inf`  *(optional, requires `[cifar,robust]` installation)*
 
 
-## Command-Line Interface: `trbench`
+## Command-Line Interface: `trbench` 🧪 
 
 For full pipeline control, use the `trbench` CLI script. It helps manage experiment runs, tracks progress, and saves results automatically.
 
