@@ -30,11 +30,11 @@ All the members of the Weights & Biases team `<my-team>` will have access to the
 
 ## Usage of the command line
 
-### 👀 Case 1: Displaying Jobs
+### Displaying Runs 👀 
 
 You can use the `display` subcommand to inspect runs. Here are a few common usage examples.
 
-**Display all runs:** For displaying all the availables runs you can use this command
+**Display all the runs:** For displaying all the availables runs you can use this command
 ```bash
 ./trbench display all
 ```
