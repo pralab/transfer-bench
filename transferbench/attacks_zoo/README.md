@@ -1,10 +1,24 @@
-# 🚀 Transfer-Based Black-Box Attacks
+# 🚀 Transfer-Based Black-Box Attacks zoo
 
 To install these attacks, run:
 
 ```bash
-pip install -e 'git+https://github.com/fabiobrau/transfer-bench.git[full]'
+pip install git+https://git@github.com/pralab/transfer-bench.git
 ```
+
+## Implemented Attacks
+
+
+| **Attack** [Venue]                 | m  | Hetero | Robust | Targeted | p        | ε                | ASR [%] | 𝑞̄    |
+|-----------------------------------|----|--------|--------|----------|----------|------------------|---------|-------|
+| SubSpace [Guo et al., 2019]       | 3  | ✅     | ❌     | ❌       | ∞        | 13/255           | 98.9%   | 462   |
+| SimbaODS [Tashiro et al., 2020]   | 4  | ❌     | ❌     | ✅       | ∞        | 13/255           | 92.0%   | 985   |
+| GFCS [Lord et al., 2022]          | 4  | ❌     | ❌     | ✅       | 2        | √0.001d¹         | 60.0%   | 20    |
+| BASES [Cai et al., 2022]          | 20 | ❌     | ❌     | ✅       | ∞        | 16/255           | 99.7%   | 1.8   |
+| GAA [Yang et al., 2024]           | 4  | ❌     | ❌     | ✅       | ∞        | 16/255           | 46.0%   | 3.9   |
+| DSWEA [Hu et al., 2025]           | 10 | ❌     | ❌     | ✅       | ∞        | 16/255           | 96.6%   | 2.7   |
+-----------------------------------------------------------------------------------------------------------------------
+¹ refers to the $\sqrt{0.001 d}$ perturbation radius, commonly used in L2 attacks.
 
 ## 🤝 Contributing
 
