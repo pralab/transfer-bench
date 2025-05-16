@@ -17,7 +17,7 @@ To install the standard version:
 pip install git+https://git@github.com/pralab/transfer-bench.git
 ```
 
-To enable evaluation on robust scenarios or cifar datasets, install the additional dependencies:
+To enable evaluation on robust scenarios or CIFAR datasets, install the additional dependencies:
 
 ```bash
 pip install "git+https://git@github.com/pralab/transfer-bench.git#egg=transferbench[robust]"
@@ -54,7 +54,7 @@ Attack evaluations are grouped into **campaigns**, each defining a different set
 
 Scenarios are stored in the directory `transferbench/config/scenarios` where also scenarios involved in the original papers have been included for comparison.
 
-Scenarios informations are aggregated in a yaml file as follows
+Scenario information is aggregated in a YAML file as follows
 ```yaml
 etero-imagenet-inf:
   - hp:
@@ -102,7 +102,7 @@ We welcome contributions! To contribute to the `attacks_zoo` or other components
 
 ### Implemented Attacks
 
-Implemented attacks, all the implementation allows batch-wise computation.
+Implemented attacks, all of which allow batch-wise computation.
 
 | **Attack**    | **Venue**   | m  | Heterogenous | Robust | Targeted | p        | ε                | ASR [%] | 𝑞̄    |
 |-------------------------------|----|----|--------|--------|----------|----------|------------------|---------|-------|
@@ -120,9 +120,9 @@ Implemented attacks, all the implementation allows batch-wise computation.
  *TransferBench: Benchmarking Ensemble-based Black-box Transfer Attacks*
  Fabio Brau, Maura Pintor, Antonio Emanuele Cinà, Raffaele Mura, Luca Scionis, Luca Oneto, Fabio Roli, Battista Biggio
 
-*Under revision for NeurIPS 2025 Datasets and Benchmarks TrackPaper*
+*Under revision for NeurIPS 2025 Datasets and Benchmarks Track*
 
 ## License 📜
 
-TransferBench is released under the MIT License. See the [LICENSE](LICENSE) file for full details.
+TransferBench is released under the CC BY-NC-ND 4.0, see the [LICENSE](LICENSE) file for full details.
 
