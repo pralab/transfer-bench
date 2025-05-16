@@ -30,11 +30,11 @@ All the members of the Weights & Biases team `<my-team>` will have access to the
 
 ## Usage of the command line
 
-### Displaying Runs 👀 
+### 👀 Displaying Runs 
 
 You can use the `display` subcommand to inspect runs. Here are a few common usage examples.
 
-**Display all the runs:** For displaying all the availables runs you can use this command
+**Display all the runs** 
 ```bash
 trbench display all
 ```
@@ -44,26 +44,25 @@ trbench display all
 trbench display crashed
 ```
 
-**🔍 Display NaiveAvg runs by a matching criterion**
-
-You can inspect only runs which satisfy a criteria by leveraging the `--query` option. For exmaple, the follwoing command visualize the runs in the "omeo" campaign
+**Display NaiveAvg runs by a matching criterion 🔍**
+You can inspect only runs that satisfy criteria by leveraging the `--query` option. For example, the following command visualizes the runs in the "omeo" campaign
 ```bash
-trbench display all --query 'surrogate == "NaiveAvg" and campaign == "omeo"'
+trbench display all --query 'attack == "NaiveAvg" and campaign == "omeo"'
 ```
 ![Watch Case 1 Demo](../../examples/demos/demo_display_all.gif)
 
 
-Run `trbench display --help` to get more infos, other options include `running, failed, crashed`.
+Run `trbench display --help` to get more info, other options include `running, failed, crashed`.
 
 
-## 🚀 Case 2: Running evaluations using query-matching criterion
+## 🚀 Running evaluations using query-matching criteria
 
 The command line allows to run the evaluations and store the results both in local and in the weight and biases project. The default directory is the `results` directory in the same path where the cli-command has been executed. This can be modified with the `config` subcommand.
 
 Re-run failed/missing runs that match a previous query.
 ### Re-run "NaiveAvg" runs in the "omeo" campaign:
 ```bash
-trbench run --query 'surrogate == "NaiveAvg" and campaign == "omeo"'
+trbench run --query 'attack == "NaiveAvg" and campaign == "omeo"'
 ```
 
 The script will automatically filter out completed jobs and only re-run those with `status in ["missing", "failed", "crashed"]`.
