@@ -226,6 +226,7 @@ def make_tabulars(df_results: pd.DataFrame) -> list[pd.DataFrame]:
 
 
 def make_barplots(df_results: pd.DataFrame) -> None:
+    r"""Create bar plots from the results."""
     for dataset in df_results["dataset"].unique():
         df_loc = df_results[df_results["dataset"] == dataset]
         # Replace queries with nan when success is 0
