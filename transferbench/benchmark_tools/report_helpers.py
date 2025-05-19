@@ -250,8 +250,9 @@ def make_json_summary(df_results: pd.DataFrame) -> dict:
             )
             .reset_index()
         )
-        agg_df.avg_success = agg_df.avg_success.round(4)
-        agg_df.avg_queries = agg_df.avg_queries.round(0).astype("Int64")  # handle NaNs
+        agg_df.avg_success *= 100
+        agg_df.avg_success = agg_df.avg_success.round(1)
+        agg_df.avg_queries = agg_df.avg_queries.round(1)
 
         agg_df = agg_df.rename(
             columns={"campaign": "scenario", "victim_model": "victim"}
@@ -264,14 +265,12 @@ def make_json_summary(df_results: pd.DataFrame) -> dict:
             attack_name = row["attack"]
             scenario = PLOT_SCENARIO_NAMES.get(row["scenario"], row["scenario"])
             victim = PLOT_MODEL_NAMES.get(row["victim"], row["victim"])
-            asr = float(row["avg_success"])
-            queries = None if pd.isna(row["avg_queries"]) else int(row["avg_queries"])
+            asr = row["avg_success"]
+            queries = None if pd.isna(row["avg_queries"]) else row["avg_queries"]
 
-            nested_dict.setdefault(victim, {}).setdefault(scenario, []).append({
-                "attack_name": attack_name,
-                "ASR": asr,
-                "queries": queries
-            })
+            nested_dict.setdefault(victim, {}).setdefault(scenario, []).append(
+                {"attack_name": attack_name, "ASR": asr, "queries": queries}
+            )
 
         json_output[dataset] = nested_dict
 
