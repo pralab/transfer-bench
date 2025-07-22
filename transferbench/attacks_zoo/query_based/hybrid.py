@@ -369,4 +369,4 @@ class HybridHyperparameters:
     nes_momentum: float = 0.9
 
 
-HybridAttack: TransferAttack = partial(hybrid_attack, **asdict(HybridHyperparameters()))
+Hybrid: TransferAttack = partial(hybrid_attack, **asdict(HybridHyperparameters()))
