@@ -1,5 +1,6 @@
 import gc
 import torch
+from dataclasses import replace
 from torch.utils.data import Subset
 from transferbench.attack_evaluation import AttackEval
 from transferbench.attacks_zoo import HybridAttack
@@ -9,8 +10,6 @@ from transferbench.scenarios import load_attack_scenario
 # Clear any existing cache
 torch.mps.empty_cache()
 gc.collect()
-
-from dataclasses import replace
 
 evaluator = AttackEval(HybridAttack)
 scenario = load_attack_scenario("debug")[0]
