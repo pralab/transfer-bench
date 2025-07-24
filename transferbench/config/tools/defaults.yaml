@@ -6,6 +6,7 @@ project_entity: "transfer-team"
 
 allowed_scenarios:
   - "omeo-imagenet-inf"
+  - "omeo-imagenet-inf-8"
   - "etero-imagenet-inf"
   - "robust-imagenet-inf"
   - "robust-imagenet-inf-32"
