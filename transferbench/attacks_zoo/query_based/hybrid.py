@@ -224,7 +224,8 @@ def hybrid_attack(
 
         remaining_sample_budget = max_queries_per_sample - sample_queries_used
         remaining_total_budget = maximum_queries - total_queries_used
-        allocated_queries = min(remaining_sample_budget, remaining_total_budget)
+        max_allowed_for_sample = maximum_queries - sample_queries_used
+        allocated_queries = min(remaining_sample_budget, remaining_total_budget, max_allowed_for_sample)
 
         x_s, query_num, ae = _nes_attack_with_trajectory(
             victim_model=victim_model,
@@ -241,7 +242,7 @@ def hybrid_attack(
         )
 
         attacked_flag[candidate_idx] = True
-        query_num_vec[candidate_idx] += query_num
+        query_num_vec[candidate_idx] = min(query_num_vec[candidate_idx] + query_num, maximum_queries)
         total_queries_used += query_num
         best_adversarials[candidate_idx:candidate_idx+1] = ae
 
