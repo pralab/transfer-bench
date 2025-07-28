@@ -15,6 +15,7 @@ OPTIONAL_ROBUST_MODELS = [
     "Bartoldson2024Adversarial_WRN-94-16",  # cifar10
     "Peng2023Robust",  # cifar10
     "Amini2024MeanSparse_S-WRN-94-16",  # cifar100
+    "cifar10_stutz2020_ccat" #cifar10
 ]
 
 
@@ -36,11 +37,20 @@ def get_model(model_name: str) -> None:
             from .robust_models import (
                 list_models as list_robust_models,
             )
+            from .ccat_models import (
+                get_model as get_ccat_model,
+            )
+            from .ccat_models import (
+                list_models as list_ccat_models,
+            )
 
             if model_name in list_pubdef_models():
                 return get_pubdef_model(model_name)
             if model_name in list_robust_models():
                 return get_robustbench_model(model_name)
+            if model_name in list_ccat_models():
+                return get_ccat_model(model_name)
+            
         except ImportError as e:
             msg = (
                 "For robust models, please install all the dependencies "
@@ -74,8 +84,10 @@ def list_models() -> list[str]:
         from .robust_models import (
             list_models as list_robust_models,
         )
-
-        models_list.extend(list_robust_models() + list_pubdef_models())
+        from .ccat_models import (
+            list_models as list_ccat_models,
+        )
+        models_list.extend(list_robust_models() + list_pubdef_models() + list_ccat_models())
     except ImportError:
         pass
     try:
