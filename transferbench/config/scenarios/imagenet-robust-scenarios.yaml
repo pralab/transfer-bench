@@ -24,29 +24,3 @@ robust-imagenet-inf:
     victim_model: "Amini2024MeanSparse_Swin-L" # https://github.com/RobustBench/robustbench#model-zoo
     surrogate_models: [ "swin_b", "swin_t", "vit_b_32"]  # ViTPool
     dataset: "ImageNetT"
-
-  
-robust-imagenet-inf-32:
-  - hp: 
-      maximum_queries: 50
-      p: "inf"
-      eps: 0.125490 # 32/255
-    victim_model: 'imagenet_resnet50_pubdef' # https://www.kaggle.com/datasets/csitawarin/pubdef-defending-against-transfer-attacks/
-    surrogate_models: ["resnet50", "resnext50_32x4d", "densenet121"]  # ResPool
-    dataset: "ImageNetT"
-
-  - hp: 
-      maximum_queries: 50
-      p: "inf"
-      eps: 0.125490 # 32/255
-    victim_model: "Xu2024MIMIR_Swin-L" # https://github.com/RobustBench/robustbench#model-zoo
-    surrogate_models: [ "swin_b", "swin_t", "vit_b_32"]  # ViTPool
-    dataset: "ImageNetT"
-
-  - hp: 
-      maximum_queries: 50
-      p: "inf"
-      eps: 0.125490 # 32/255
-    victim_model: "Amini2024MeanSparse_Swin-L" # https://github.com/RobustBench/robustbench#model-zoo
-    surrogate_models: [ "swin_b", "swin_t", "vit_b_32"]  # ViTPool
-    dataset: "ImageNetT"
