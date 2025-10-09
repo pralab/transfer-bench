@@ -1,0 +1,69 @@
+# Hybrid Attack Scenarios - Based on Original Paper Configurations
+# "Hybrid Batch Attacks: Finding Black-box Adversarial Examples with Limited Queries"
+# by Fnu Suya, Jianfeng Chi, David Evans, Yuan Tian (USENIX Security 2020)
+
+# CIFAR-10 Scenarios (from original paper)
+hybrid_cifar10_cnn:
+  - hp:
+      eps: 0.05  # L-inf norm from original paper
+      p: "inf"
+      maximum_queries: 4000  # Original paper default
+    victim_model: "cifar10_vgg19_bn"
+    surrogate_models: ["cifar10_vgg16_bn", "cifar10_vgg13_bn", "cifar10_resnet44"]
+    dataset: "CIFAR10T"
+
+hybrid_cifar10_resnet:
+  - hp:
+      eps: 0.05
+      p: "inf"
+      maximum_queries: 4000
+    victim_model: "cifar10_resnet56"
+    surrogate_models: ["cifar10_resnet44", "cifar10_resnet32", "cifar10_vgg16_bn"]
+    dataset: "CIFAR10T"
+
+# ImageNet Scenarios (from original paper)
+hybrid_imagenet_densenet:
+  - hp:
+      eps: 12.0  # L-inf perturbation budget from original paper
+      p: "inf"
+      maximum_queries: 100000  # Original paper default
+    victim_model: "densenet121"
+    surrogate_models: ["vgg16", "vgg19", "resnet50"]
+    dataset: "ImageNetT"
+
+hybrid_imagenet_vgg:
+  - hp:
+      eps: 0.062745  # 16/255 - common ImageNet perturbation
+      p: "inf"
+      maximum_queries: 4000  # Reduced for testing
+    victim_model: "vgg19"
+    surrogate_models: ["resnet50", "resnext50_32x4d", "vgg16"]
+    dataset: "ImageNetT"
+
+hybrid_imagenet_resnet:
+  - hp:
+      eps: 0.062745
+      p: "inf"
+      maximum_queries: 4000
+    victim_model: "resnext101_32x8d"
+    surrogate_models: ["resnet50", "densenet121", "vgg19"]
+    dataset: "ImageNetT"
+
+# Simplified scenarios for testing
+hybrid_test_cifar10:
+  - hp:
+      eps: 0.05
+      p: "inf"
+      maximum_queries: 1000  # Reduced for quick testing
+    victim_model: "cifar10_vgg19_bn"
+    surrogate_models: ["cifar10_resnet44", "cifar10_vgg16_bn"]
+    dataset: "CIFAR10T"
+
+hybrid_test_imagenet:
+  - hp:
+      eps: 0.062745
+      p: "inf"
+      maximum_queries: 1000
+    victim_model: "vgg19"
+    surrogate_models: ["resnet50", "vgg16"]
+    dataset: "ImageNetT"

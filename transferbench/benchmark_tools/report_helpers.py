@@ -336,6 +336,49 @@ def make_barplots(df_results: pd.DataFrame) -> None:
         plt.savefig(plot_path, bbox_inches="tight")
         plt.clf()
 
+def make_barplots_CI(df_results: pd.DataFrame) -> None:
+    r"""Create bar plots with confidence intervals."""
+    for dataset in df_results["dataset"].unique():
+        for scenario in df_results["campaign"].unique():
+            df_loc = df_results[df_results["dataset"] == dataset].copy()
+            df_loc = df_loc[df_loc["campaign"] == scenario]
+            # Rename models
+            df_loc["victim_model"] = df_loc["victim_model"].map(PLOT_MODEL_NAMES)
+            df_loc["attack"] = df_loc["attack"].map(PLOT_ATTACK_NAMES)
+            # Fix order of attacks
+            order = (
+                df_loc.groupby("attack")["success"]
+                .mean()
+                .sort_values(ascending=False)
+                .index
+            )
+            #plt.figure(figsize=(8, 2.5))
+            sns.barplot(
+                data=df_loc,
+                x="victim_model",
+                y="success",
+                hue="attack",
+                hue_order=order,
+                palette="Set2",
+                errorbar=("ci", 95),
+            )
+
+            plt.title(f"Confidence Intervals for {dataset} - {PLOT_SCENARIO_NAMES[scenario]}")
+            plt.ylabel("Attack Success Rate [%]")
+            plt.xlabel("")
+            plt.xticks(rotation=0.)
+            plt.legend(title="Attack")
+            # put legend outside the plot
+            plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
+            # Set x-axis to log scale
+            # add grid
+            plt.grid(axis="y", linestyle="--", alpha=0.7)
+            plt.tight_layout()
+            plot_path = Path(cfg.report_root) / f"barplot_ci_{dataset}_{scenario}.pdf"
+            plot_path.parent.mkdir(parents=True, exist_ok=True)
+            plt.savefig(plot_path, bbox_inches="tight")
+            plt.clf()
+
 
 def make_line_plots(df_results: pd.DataFrame, add_oneshot: bool = False) -> None:
     r"""Make side-by-side plots (one per scenario) from the results.
@@ -463,3 +506,4 @@ def make_plots(df_results: pd.DataFrame) -> None:
     """
     make_line_plots(df_results)
     make_barplots(df_results)
+    make_barplots_CI(df_results)
