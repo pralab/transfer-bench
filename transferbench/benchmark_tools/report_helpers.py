@@ -2,7 +2,7 @@ r"""Report helpers for transferbench."""
 
 import json
 from collections import OrderedDict, defaultdict
-from itertools import zip_longest
+from itertools import product, zip_longest
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -55,6 +55,7 @@ ATTACK_NAMES = OrderedDict(
         "GAA": "GAA",
         "GFCS": "GFCS",
         "SimbaODS": "SimbaODS",
+        "Hybrid": "Hybrid",
         "NaiveAvg10": "NaiveAvg10",
         "NaiveAvg": "NaiveAvg100",
         "ENS": "ENS",
@@ -72,6 +73,7 @@ PLOT_ATTACK_NAMES = OrderedDict(
         "GAA": "GAA",
         "GFCS": "GFCS",
         "SimbaODS": "SimbaODS",
+        "Hybrid": "Hybrid",
         "NaiveAvg10": "NaiveAvg10",
         "NaiveAvg": "NaiveAvg100",
         "ENS": "ENS",
@@ -82,6 +84,13 @@ PLOT_ATTACK_NAMES = OrderedDict(
         "SVRE": "SVRE",
     }
 )
+
+def get_frac(eps:float)->str:
+    r"""Convert a float to a LaTeX fraction string assuming x/255."""
+    for numerator in range(1, 127):
+        if abs(eps - numerator / 255) < 1e-3:
+            return f"\\frac{{{numerator}}}{{255}}"
+    return str(eps)
 
 
 def collect_results(download: bool) -> list[dict]:
@@ -149,10 +158,14 @@ def make_tabulars(df_results: pd.DataFrame) -> list[pd.DataFrame]:
         str: list of pandas dataframes.
     """
     datasets = df_results["dataset"].unique()
+    eps_budgets = df_results["eps"].unique()
     tabulars = []
 
-    for dataset in datasets:
+    for dataset, eps in product(datasets, eps_budgets):
         df_loc = df_results[df_results["dataset"] == dataset]
+        df_loc = df_loc[df_loc["eps"] == eps]
+        if df_loc.empty:
+            continue
         # Replace queries with nan when success is 0
         df_loc.loc[df_loc["success"] == 0, "queries"] = float("nan")
 
@@ -211,7 +224,7 @@ def make_tabulars(df_results: pd.DataFrame) -> list[pd.DataFrame]:
 
         # Write to LaTeX
         pivot_df.to_latex(
-            Path(cfg.report_root) / f"tabular_{dataset}.tex",
+            Path(cfg.report_root) / f"tabular_{dataset}_{eps}.tex",
             caption=f"Results for {dataset}",
             label=f"tab:{dataset}",
             float_format="%.1f",
@@ -235,10 +248,14 @@ def make_json_summary(df_results: pd.DataFrame) -> dict:
         dict: Nested dictionary in the desired JSON structure.
     """
     datasets = df_results["dataset"].unique()
+    eps_budgets = df_results["eps"].unique()
     json_output = {}
 
-    for dataset in datasets:
+    for dataset, eps in product(datasets, eps_budgets):
         df_loc = df_results[df_results["dataset"] == dataset]
+        df_loc = df_loc[df_loc["eps"] == eps]
+        if df_loc.empty:
+            continue
         df_loc = df_loc[df_loc["campaign"].isin(SCENARIO_NAMES.keys())]
         df_loc.loc[df_loc["success"] == 0, "queries"] = float("nan")
 
@@ -269,7 +286,7 @@ def make_json_summary(df_results: pd.DataFrame) -> dict:
             queries = None if pd.isna(row["avg_queries"]) else row["avg_queries"]
 
             nested_dict.setdefault(victim, {}).setdefault(scenario, []).append(
-                {"attack_name": attack_name, "ASR": asr, "queries": queries}
+                {"attack_name": attack_name, "ASR": asr, "queries": queries, "epsilon": get_frac(eps)}
             )
 
         json_output[dataset] = nested_dict
@@ -284,8 +301,14 @@ def make_json_summary(df_results: pd.DataFrame) -> dict:
 
 def make_barplots(df_results: pd.DataFrame) -> None:
     r"""Create bar plots from the results."""
-    for dataset in df_results["dataset"].unique():
+    datasets = df_results["dataset"].unique()
+    eps_budgets = df_results["eps"].unique()
+
+    for dataset, eps in product(datasets, eps_budgets):
         df_loc = df_results[df_results["dataset"] == dataset]
+        df_loc = df_loc[df_loc["eps"] == eps]
+        if df_loc.empty:
+            continue
         # Replace queries with nan when success is 0
         df_loc.loc[df_loc["success"] == 0, "queries"] = float("nan")
         agg_df = (
@@ -323,7 +346,7 @@ def make_barplots(df_results: pd.DataFrame) -> None:
             errorbar=("pi", 50),
         )
 
-        plt.title(f"Attack Success Rate for {dataset}")
+        plt.title(f"Attack Success Rate for {dataset} and $\\epsilon={get_frac(eps)}$")
         plt.ylabel("Attack Success Rate [%]")
         plt.xlabel("")
         plt.xticks(rotation=15)
@@ -331,17 +354,24 @@ def make_barplots(df_results: pd.DataFrame) -> None:
         # add grid
         plt.grid(axis="y", linestyle="--", alpha=0.7)
         plt.tight_layout()
-        plot_path = Path(cfg.report_root) / f"barplot_{dataset}.pdf"
+        plot_path = Path(cfg.report_root) / f"barplot_{dataset}_{eps}.pdf"
         plot_path.parent.mkdir(parents=True, exist_ok=True)
         plt.savefig(plot_path, bbox_inches="tight")
         plt.clf()
 
 def make_barplots_CI(df_results: pd.DataFrame) -> None:
     r"""Create bar plots with confidence intervals."""
-    for dataset in df_results["dataset"].unique():
+    datasets = df_results["dataset"].unique()
+    eps_budgets = df_results["eps"].unique()
+
+    for dataset, eps in product(datasets, eps_budgets):
         for scenario in df_results["campaign"].unique():
             df_loc = df_results[df_results["dataset"] == dataset].copy()
+            df_loc = df_loc[df_loc["eps"] == eps]
+            if df_loc.empty:
+                continue
             df_loc = df_loc[df_loc["campaign"] == scenario]
+
             # Rename models
             df_loc["victim_model"] = df_loc["victim_model"].map(PLOT_MODEL_NAMES)
             df_loc["attack"] = df_loc["attack"].map(PLOT_ATTACK_NAMES)
@@ -363,7 +393,7 @@ def make_barplots_CI(df_results: pd.DataFrame) -> None:
                 errorbar=("ci", 95),
             )
 
-            plt.title(f"Confidence Intervals for {dataset} - {PLOT_SCENARIO_NAMES[scenario]}")
+            plt.title(f"Confidence Intervals for {dataset} - {PLOT_SCENARIO_NAMES[scenario]} - $\\epsilon={get_frac(eps)}$")
             plt.ylabel("Attack Success Rate [%]")
             plt.xlabel("")
             plt.xticks(rotation=0.)
@@ -374,7 +404,7 @@ def make_barplots_CI(df_results: pd.DataFrame) -> None:
             # add grid
             plt.grid(axis="y", linestyle="--", alpha=0.7)
             plt.tight_layout()
-            plot_path = Path(cfg.report_root) / f"barplot_ci_{dataset}_{scenario}.pdf"
+            plot_path = Path(cfg.report_root) / f"barplot_ci_{dataset}_{scenario}_{eps}.pdf"
             plot_path.parent.mkdir(parents=True, exist_ok=True)
             plt.savefig(plot_path, bbox_inches="tight")
             plt.clf()
@@ -386,8 +416,13 @@ def make_line_plots(df_results: pd.DataFrame, add_oneshot: bool = False) -> None
     Args:
         df_results (pd.DataFrame): DataFrame with the results.
     """
-    for dataset in df_results["dataset"].unique():
+    datasets = df_results["dataset"].unique()
+    eps_budgets = df_results["eps"].unique()
+    for dataset, eps in product(datasets, eps_budgets):
         df_loc = df_results[df_results["dataset"] == dataset]
+        df_loc = df_loc[df_loc["eps"] == eps]
+        if df_loc.empty:
+            continue
         if not add_oneshot:
             df_loc = df_loc[df_loc["queries"] > 0]
         df_sel = df_loc[["campaign", "victim_model"]].drop_duplicates()
@@ -492,7 +527,7 @@ def make_line_plots(df_results: pd.DataFrame, add_oneshot: bool = False) -> None
                 bbox_to_anchor=(1, 0.5),
             )
             plt.tight_layout()
-            plot_path = Path(cfg.report_root) / f"plot_{dataset}_{row[0]}.pdf"
+            plot_path = Path(cfg.report_root) / f"plot_{dataset}_{row[0]}_{eps}.pdf"
             plot_path.parent.mkdir(parents=True, exist_ok=True)
             plt.savefig(plot_path, bbox_inches="tight")
             plt.clf()
