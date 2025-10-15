@@ -85,6 +85,12 @@ PLOT_ATTACK_NAMES = OrderedDict(
     }
 )
 
+# Palette stabile (scegli tu: "tab20", "Set2", ecc.)
+BASE_COLORS = sns.color_palette("tab20", n_colors=len(PLOT_ATTACK_NAMES.values()))
+
+# Mappa globale: attacco -> colore (riusa in TUTTI i grafici)
+ATTACK_COLOR_MAP = dict(zip(PLOT_ATTACK_NAMES.values(), BASE_COLORS, strict=True))
+
 def get_frac(eps:float)->str:
     r"""Convert a float to a LaTeX fraction string assuming x/255."""
     for numerator in range(1, 127):
@@ -382,14 +388,14 @@ def make_barplots_CI(df_results: pd.DataFrame) -> None:
                 .sort_values(ascending=False)
                 .index
             )
-            #plt.figure(figsize=(8, 2.5))
-            sns.barplot(
+            plt.figure(figsize=(9, 4.25))
+            ax = sns.barplot(
                 data=df_loc,
                 x="victim_model",
                 y="success",
                 hue="attack",
                 hue_order=order,
-                palette="Set2",
+                palette=ATTACK_COLOR_MAP,
                 errorbar=("ci", 95),
             )
 
@@ -397,17 +403,33 @@ def make_barplots_CI(df_results: pd.DataFrame) -> None:
             plt.ylabel("Attack Success Rate [%]")
             plt.xlabel("")
             plt.xticks(rotation=0.)
-            plt.legend(title="Attack")
-            # put legend outside the plot
-            plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
-            # Set x-axis to log scale
+            # check if legend exists
+            #if ax.get_legend() is not None:
+            #    sns.move_legend(
+            #    ax, "lower center",
+            #    bbox_to_anchor=(.5, 1.2), ncol=6, title=None, frameon=False,
+            #    )
+            if ax.get_legend() is not None:
+
+                handles, labels = ax.get_legend_handles_labels()
+                # sort labels and handles according to ATTACK_COLOR_MAP
+                sorted_pairs = sorted(zip(labels, handles), key=lambda x: list(ATTACK_COLOR_MAP.keys()).index(x[0]))
+                labels, handles = zip(*sorted_pairs)
+                ax.legend(
+                    handles, labels,
+                    title=None,
+                    loc="upper center",
+                    bbox_to_anchor=(0.5, 1.5),
+                    ncol=6, 
+                    frameon=False
+                )
             # add grid
             plt.grid(axis="y", linestyle="--", alpha=0.7)
             plt.tight_layout()
             plot_path = Path(cfg.report_root) / f"barplot_ci_{dataset}_{scenario}_{eps}.pdf"
             plot_path.parent.mkdir(parents=True, exist_ok=True)
             plt.savefig(plot_path, bbox_inches="tight")
-            plt.clf()
+            plt.close()
 
 
 def make_line_plots(df_results: pd.DataFrame, add_oneshot: bool = False) -> None:
