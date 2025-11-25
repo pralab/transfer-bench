@@ -1,6 +1,20 @@
-# TransferBench 〶
+[![NeurIPS 2025](https://img.shields.io/badge/NeurIPS-2025%20Accepted-brightgreen.svg)](https://openreview.net/forum?id=uT0A1pjBqu)
+[![OpenReview](https://img.shields.io/badge/OpenReview-View-blue)](https://openreview.net/forum?id=uT0A1pjBqu)
+![Domain](https://img.shields.io/badge/Domain-Adversarial%20ML-red)
+![Benchmark](https://img.shields.io/badge/Benchmark-TransferBench-purple)
+![Python](https://img.shields.io/badge/Python-3.10%2B-yellow)
+![PyTorch](https://img.shields.io/badge/PyTorch-2.3+-ee4c2c)
+[![License: CC BY-NC-ND 4.0](https://img.shields.io/badge/License-CC%20BY--NC--ND%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-nd/4.0/)
+
+
+Official repository for TransferBench — a reproducible benchmark for ensemble-based black-box transfer attacks. Accepted to NeurIPS 2025 (Datasets & Benchmarks Track). For citation and paper details see the Paper section below.
+# 〶ransferBench 
 
 TransferBench is a Python package designed for evaluating black-box transfer attacks using one or more surrogate models. It provides a flexible and streamlined interface for testing attack effectiveness across a variety of scenarios involving different victim models, surrogate models, and datasets. Optional robust victim models are also supported.
+
+## News 📰✨
+- (2025-09) 🎉 TransferBench has been accepted to NeurIPS — Datasets & Benchmarks Track! 🚀 See the Paper section below or the OpenReview link for details. 🙏 Thanks to all contributors and collaborators!
+
 
 ## Features ✅
 
@@ -116,11 +130,23 @@ Implemented attacks, all of which allow batch-wise computation.
 ¹ Images included in the experiments have $d=3\cdot 299\cdot299$ pixels, from which $\varepsilon\approx16.37$
 
 ## Paper 📄 *Benchmarking Ensemble-based Black-box Transfer Attacks*
- 
- *TransferBench: Benchmarking Ensemble-based Black-box Transfer Attacks*
- Fabio Brau, Maura Pintor, Antonio Emanuele Cinà, Raffaele Mura, Luca Scionis, Luca Oneto, Fabio Roli, Battista Biggio
 
-*Under revision for NeurIPS 2025 Datasets and Benchmarks Track*
+*TransferBench: Benchmarking Ensemble-based Black-box Transfer Attacks*  
+Fabio Brau, Maura Pintor, Antonio Emanuele Cinà, Raffaele Mura, Luca Scionis, Luca Oneto, Fabio Roli, Battista Biggio
+
+Accepted to NeurIPS 2025 — Datasets and Benchmarks Track.  
+OpenReview: https://openreview.net/forum?id=uT0A1pjBqu
+
+Bibliography (BibTeX)
+```bibtex
+@inproceedings{brau2025transferbench,
+  title={TransferBench: Benchmarking Ensemble-based Black-box Transfer Attacks},
+  author={Brau, Fabio and Pintor, Maura and Cin{\`a}, Antonio Emanuele and Mura, Raffaele and Scionis, Luca and Oneto, Luca and Roli, Fabio and Biggio, Battista},
+  booktitle={The Thirty-ninth Annual Conference on Neural Information Processing Systems Datasets and Benchmarks Track},
+  year = {2025},
+  url = {https://openreview.net/forum?id=uT0A1pjBqu}
+}
+```
 
 ## License 📜
 
